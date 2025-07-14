@@ -41,33 +41,30 @@ const ExistenciasUploader = () => {
   const [showUploadModal, setShowUploadModal] = useState(false);
   const [showDeleteModal, setShowDeleteModal] = useState(false);
 
-  // Funciones auxiliares para parseo
+  // AUXILIARES DE PARSEO
   const parseDate = (value) => {
     if (!value) return null;
     if (typeof value === 'number') {
       const date = XLSX.SSF.parse_date_code(value);
       if (!date) return null;
-      const jsDate = new Date(date.y, date.m - 1, date.d);
-      return jsDate.toISOString().slice(0, 10);
+      return new Date(date.y, date.m - 1, date.d).toISOString().slice(0, 10);
     }
     const d = new Date(value);
-    if (isNaN(d)) return null;
-    return d.toISOString().slice(0, 10);
+    return isNaN(d) ? null : d.toISOString().slice(0, 10);
   };
 
   const parseInteger = (value) => {
-    if (value === null || value === undefined) return null;
+    if (value === null || value === undefined || value === '') return null;
     const n = parseInt(value, 10);
     return isNaN(n) ? null : n;
   };
 
   const parseFloatNumber = (value) => {
-    if (value === null || value === undefined) return null;
+    if (value === null || value === undefined || value === '') return null;
     const n = parseFloat(value);
     return isNaN(n) ? null : n;
   };
 
-  // Mapea cada fila del Excel a la estructura que espera la API
   const mapExcelRowToApi = (row) => ({
     bodega: (row['Bodega'] ?? '').toString().trim(),
     descBodega: (row['Desc. bodega'] ?? '').toString().trim(),
@@ -91,23 +88,22 @@ const ExistenciasUploader = () => {
     precioMaximo: parseFloatNumber(row['Precio máximo']),
   });
 
-  // Maneja selección de archivo
-  const handleFileChange = (event) => {
+  // FILE HANDLERS
+  const handleFileChange = (e) => {
     setErrors([]);
     setSuccessMessage('');
-    const file = event.target.files[0];
+    const file = e.target.files[0];
     if (file) {
       setFileToUpload(file);
       setShowUploadModal(true);
     }
   };
 
-  // Confirma y procesa la carga
   const handleConfirmUpload = async () => {
     if (!fileToUpload) return;
     setShowUploadModal(false);
-    const reader = new FileReader();
 
+    const reader = new FileReader();
     reader.onload = async (e) => {
       try {
         setLoading(true);
@@ -115,12 +111,13 @@ const ExistenciasUploader = () => {
         const workbook = XLSX.read(data, { type: 'array' });
         const sheetName = workbook.SheetNames[0];
         const worksheet = workbook.Sheets[sheetName];
-        const jsonData = XLSX.utils.sheet_to_json(worksheet, { defval: null });
+        const jsonData = XLSX.utils.sheet_to_json(worksheet, { defval: '' });
         const mappedData = jsonData.map(mapExcelRowToApi);
 
-        // Validación simple para campos obligatorios
-        const invalidRows = mappedData.filter(
-          (row) =>
+        // VALIDACIÓN
+        const invalidRows = mappedData
+          .map((row, idx) => ({ row, idx }))
+          .filter(({ row }) =>
             !row.bodega ||
             !row.descBodega ||
             row.item === null ||
@@ -140,15 +137,16 @@ const ExistenciasUploader = () => {
             row.precioOrdenFactor === null ||
             row.precioMinimo === null ||
             row.precioMaximo === null
-        );
+          );
 
         if (invalidRows.length > 0) {
-          setErrors(['Algunas filas tienen campos inválidos o vacíos. Por favor revisa los datos.']);
+          const invalidRowNumbers = invalidRows.map(r => r.idx + 2).join(', ');
+          setErrors([`❌ Algunas filas tienen campos vacíos o inválidos. Revisa las filas del Excel: ${invalidRowNumbers}`]);
           setLoading(false);
           return;
         }
 
-        // Envía datos al backend (ajusta la URL si es necesario)
+        // ENVÍO AL BACKEND
         await axios.post('http://localhost:3000/existencias/bulk', mappedData);
         setSuccessMessage('✅ Datos importados correctamente');
       } catch (error) {
@@ -165,20 +163,17 @@ const ExistenciasUploader = () => {
     reader.readAsArrayBuffer(fileToUpload);
   };
 
-  // Cancela la carga
   const handleCancelUpload = () => {
     setShowUploadModal(false);
     setFileToUpload(null);
   };
 
-  // Muestra modal para confirmar eliminación total
   const handleDeleteClick = () => {
     setErrors([]);
     setSuccessMessage('');
     setShowDeleteModal(true);
   };
 
-  // Confirma eliminación total
   const handleConfirmDelete = async () => {
     setShowDeleteModal(false);
     try {
@@ -192,7 +187,6 @@ const ExistenciasUploader = () => {
     }
   };
 
-  // Cancela eliminación
   const handleCancelDelete = () => {
     setShowDeleteModal(false);
   };
@@ -230,8 +224,8 @@ const ExistenciasUploader = () => {
       {errors.length > 0 && (
         <div className="bg-red-100 border border-red-400 text-red-700 px-4 py-3 rounded relative">
           <ul className="list-disc list-inside">
-            {errors.map((err) => (
-              <li key={err}>{err}</li>
+            {errors.map((err, i) => (
+              <li key={i}>{err}</li>
             ))}
           </ul>
         </div>
@@ -243,7 +237,6 @@ const ExistenciasUploader = () => {
         </div>
       )}
 
-      {/* Modal para confirmar subida */}
       {showUploadModal && (
         <Modal
           title="Confirmar subida"
@@ -253,7 +246,6 @@ const ExistenciasUploader = () => {
         />
       )}
 
-      {/* Modal para confirmar eliminación */}
       {showDeleteModal && (
         <Modal
           title="Confirmar eliminación"
@@ -267,5 +259,3 @@ const ExistenciasUploader = () => {
 };
 
 export default ExistenciasUploader;
-
-

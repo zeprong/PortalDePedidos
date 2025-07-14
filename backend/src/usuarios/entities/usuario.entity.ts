@@ -36,4 +36,3 @@ export class Usuario {
   @Column({ length: 255 })
   correo: string;
 }
-

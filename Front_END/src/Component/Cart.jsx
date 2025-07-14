@@ -1,9 +1,9 @@
 import React, { useState, useEffect, useRef } from 'react';
 import PropTypes from 'prop-types';
-import * as XLSX from 'xlsx';
-import { saveAs } from 'file-saver';
+import * as XLSX from 'xlsx'; // Para exportar a Excel
+import { saveAs } from 'file-saver'; // Para guardar archivos (excel)
 
-import Cotizacion from './Cotizacion';
+import Cotizacion from './Cotizacion'; // Importamos el componente de Cotización
 
 const Cart = ({ open, onClose, cart, onRemove, onClear, onClienteChange, onCotizacionGuardada }) => {
   const [localCart, setLocalCart] = useState([]);
@@ -11,25 +11,36 @@ const Cart = ({ open, onClose, cart, onRemove, onClear, onClienteChange, onCotiz
   const [clienteSeleccionado, setClienteSeleccionado] = useState(null);
   const [inputCliente, setInputCliente] = useState('');
   const [showSuggestions, setShowSuggestions] = useState(false);
-  const [mostrarCotizacion, setMostrarCotizacion] = useState(false);
+  const [mostrarCotizacion, setMostrarCotizacion] = useState(false); // Estado para mostrar/ocultar el modal de Cotizacion
 
-  const suggestionsRef = useRef(null);
+  const suggestionsRef = useRef(null); // Ref para cerrar sugerencias al hacer clic fuera
 
+  // Carga inicial de clientes al montar el componente
   useEffect(() => {
     fetch('http://localhost:3000/clientes')
       .then(res => res.json())
       .then(data => {
-        setClientes(data);
-        if (!clienteSeleccionado && data.length > 0) {
-          setClienteSeleccionado(data[0]);
-          setInputCliente(data[0].nombreApellidos || data[0].nombre || '');
-          if (onClienteChange) onClienteChange(data[0]);
+        // Mapeo inicial para asegurar que todos los clientes tienen las propiedades 'telefono' y 'ciudad'
+        // Esto previene errores si la API no los devuelve para algunos clientes
+        const clientesPreparados = data.map(cliente => ({
+          ...cliente,
+          telefono: cliente.telefono || '', // Asegura que 'telefono' exista y sea string
+          ciudad: cliente.ciudad || ''      // Asegura que 'ciudad' exista y sea string
+        }));
+        
+        setClientes(clientesPreparados);
+        // Establece el primer cliente si no hay uno seleccionado
+        if (!clienteSeleccionado && clientesPreparados.length > 0) {
+          setClienteSeleccionado(clientesPreparados[0]);
+          setInputCliente(clientesPreparados[0].nombreApellidos || clientesPreparados[0].nombre || '');
+          if (onClienteChange) onClienteChange(clientesPreparados[0]);
         }
       })
       .catch(err => console.error('Error cargando clientes:', err));
     // eslint-disable-next-line
   }, []);
 
+  // Asegura que un cliente inicial esté seleccionado si hay clientes disponibles
   useEffect(() => {
     if (clientes.length > 0 && !clienteSeleccionado) {
       setClienteSeleccionado(clientes[0]);
@@ -39,6 +50,7 @@ const Cart = ({ open, onClose, cart, onRemove, onClear, onClienteChange, onCotiz
     // eslint-disable-next-line
   }, [clientes]);
 
+  // Sincroniza el carrito local con el carrito global cuando el modal se abre o el carrito cambia
   useEffect(() => {
     if (open) {
       const clonedCart = cart.map(item => ({
@@ -56,6 +68,7 @@ const Cart = ({ open, onClose, cart, onRemove, onClear, onClienteChange, onCotiz
     }
   }, [open, cart]);
 
+  // Maneja clic fuera de las sugerencias para cerrarlas
   useEffect(() => {
     const handleClickOutside = (event) => {
       if (suggestionsRef.current && !suggestionsRef.current.contains(event.target)) {
@@ -66,6 +79,7 @@ const Cart = ({ open, onClose, cart, onRemove, onClear, onClienteChange, onCotiz
     return () => document.removeEventListener('mousedown', handleClickOutside);
   }, []);
 
+  // Maneja el cambio en el input del cliente para filtrar sugerencias
   const handleInputChange = (e) => {
     const val = e.target.value;
     setInputCliente(val);
@@ -84,6 +98,7 @@ const Cart = ({ open, onClose, cart, onRemove, onClear, onClienteChange, onCotiz
     }
   };
 
+  // Maneja la selección de un cliente de la lista de sugerencias
   const handleSelectCliente = (cliente) => {
     setClienteSeleccionado(cliente);
     setInputCliente(cliente.nombreApellidos || cliente.nombre || '');
@@ -91,6 +106,7 @@ const Cart = ({ open, onClose, cart, onRemove, onClear, onClienteChange, onCotiz
     if (onClienteChange) onClienteChange(cliente);
   };
 
+  // Maneja el cambio de cantidad de un producto en el carrito local
   const handleChangeCantidad = (index, value) => {
     const newCart = [...localCart];
     const cantidad = parseInt(value);
@@ -98,9 +114,11 @@ const Cart = ({ open, onClose, cart, onRemove, onClear, onClienteChange, onCotiz
     setLocalCart(newCart);
   };
 
+  // Calcula el total del carrito local
   const calcularTotal = () =>
     localCart.reduce((sum, item) => sum + item.cantidad * item.precio_editado, 0);
 
+  // Exporta el carrito a un archivo Excel
   const exportToExcel = () => {
     if (!clienteSeleccionado) {
       alert('Por favor selecciona un cliente antes de exportar.');
@@ -170,10 +188,12 @@ const Cart = ({ open, onClose, cart, onRemove, onClear, onClienteChange, onCotiz
     saveAs(blob, `Cotizacion_${new Date().toLocaleDateString()}.xlsx`);
   };
 
+  // Muestra el modal de Cotizacion
   const handleGenerarDocumento = () => {
     setMostrarCotizacion(true);
   };
 
+  // Cierra el modal de Cotizacion
   const handleCerrarCotizacion = () => {
     setMostrarCotizacion(false);
   };
@@ -188,17 +208,19 @@ const Cart = ({ open, onClose, cart, onRemove, onClear, onClienteChange, onCotiz
     if (onCotizacionGuardada) onCotizacionGuardada(); // Notifica al padre
   };
 
-  if (!open) return null;
+  if (!open) return null; // No renderiza nada si el modal no está abierto
 
+  // Filtra y limita las sugerencias de clientes
   const clientesFiltrados = clientes.filter(c =>
     (c.nombreApellidos || c.nombre || '').toLowerCase().includes(inputCliente.toLowerCase())
-  ).slice(0, 5);
+  ).slice(0, 5); // Limita a 5 sugerencias
 
   return (
     <>
+      {/* Overlay y modal del carrito */}
       <div className="fixed inset-0 bg-black bg-opacity-40 z-50 flex items-center justify-center p-2">
         <div className="bg-white rounded-xl w-full max-w-[800px] max-h-[90vh] shadow-2xl relative border border-gray-300 text-xs text-gray-800 font-sans flex flex-col">
-          {/* Header */}
+          {/* Header del carrito */}
           <div className="flex justify-between items-center px-4 py-2 bg-white border-b border-gray-200 text-sm sticky top-0 z-10 rounded-t-xl">
             <span className="text-green-900 font-medium">Carrito de productos</span>
             <button onClick={onClose} className="text-gray-500 text-lg font-semibold hover:text-gray-700">×</button>
@@ -238,7 +260,7 @@ const Cart = ({ open, onClose, cart, onRemove, onClear, onClienteChange, onCotiz
             )}
           </div>
 
-          {/* Contenido carrito */}
+          {/* Contenido del carrito (productos) */}
           <div id="cart-content" className="overflow-y-auto flex-1 p-4 space-y-3">
             {localCart.length === 0 ? (
               <p className="text-gray-400 text-center py-10">Sin productos.</p>
@@ -285,7 +307,7 @@ const Cart = ({ open, onClose, cart, onRemove, onClear, onClienteChange, onCotiz
             )}
           </div>
 
-          {/* Footer carrito */}
+          {/* Footer del carrito */}
           {localCart.length > 0 && (
             <div className="bg-white p-3 border-t border-gray-200 sticky bottom-0 z-10 rounded-b-xl flex justify-between items-center text-sm">
               <button onClick={onClear} className="text-red-600 hover:underline">Vaciar</button>
@@ -313,7 +335,7 @@ const Cart = ({ open, onClose, cart, onRemove, onClear, onClienteChange, onCotiz
         </div>
       </div>
 
-      {/* Modal Cotización */}
+      {/* Modal para la Cotización (vista previa y descarga) */}
       {mostrarCotizacion && (
         <div className="fixed inset-0 bg-black bg-opacity-40 z-60 flex items-center justify-center p-2">
           <div className="bg-white rounded-xl w-full max-w-4xl max-h-[95vh] shadow-2xl relative border border-gray-300 p-4 overflow-auto">
@@ -324,8 +346,18 @@ const Cart = ({ open, onClose, cart, onRemove, onClear, onClienteChange, onCotiz
             >
               ×
             </button>
+            {/* Componente Cotizacion, con mapeo explícito de propiedades del cliente */}
             <Cotizacion
-              cliente={clienteSeleccionado}
+              cliente={{
+                nombreApellidos: clienteSeleccionado?.nombreApellidos || '',
+                nombre: clienteSeleccionado?.nombre || '',
+                razonSocial: clienteSeleccionado?.razonSocial || '',
+                // Asume que 'cliente' o 'nit' es el ID/NIT del cliente
+                cliente: clienteSeleccionado?.cliente || clienteSeleccionado?.nit || '',
+                direccion: clienteSeleccionado?.direccion || '',
+                telefono: clienteSeleccionado?.telefono || '', // <-- Aquí se pasa el teléfono
+                ciudad: clienteSeleccionado?.ciudad || ''      // <-- Aquí se pasa la ciudad
+              }}
               productos={localCart.map(item => ({
                 codigo: item.codigo,
                 descripcion: item.descripcion,
@@ -335,6 +367,7 @@ const Cart = ({ open, onClose, cart, onRemove, onClear, onClienteChange, onCotiz
                 fechaVcto: item.fechaLote || item.fechaVcto || '-',
                 iva: item.iva || 0,
               }))}
+              // Observaciones para la cotización
               observaciones={`Cliente: ${clienteSeleccionado ? (clienteSeleccionado.nombreApellidos || clienteSeleccionado.nombre || clienteSeleccionado.razonSocial) : ''}`}
               onCotizacionGuardada={handleCotizacionGuardada}
             />
@@ -345,6 +378,7 @@ const Cart = ({ open, onClose, cart, onRemove, onClear, onClienteChange, onCotiz
   );
 };
 
+// Definición de PropTypes para el componente Cart
 Cart.propTypes = {
   open: PropTypes.bool.isRequired,
   onClose: PropTypes.func.isRequired,
@@ -356,4 +390,3 @@ Cart.propTypes = {
 };
 
 export default Cart;
-

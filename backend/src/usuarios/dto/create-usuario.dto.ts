@@ -46,4 +46,3 @@ export class CreateUsuarioDto {
   @IsOptional()
   imagen?: Express.Multer.File;
 }
-
