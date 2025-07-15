@@ -17,6 +17,12 @@ export class CotizacionController {
   findAll(): Promise<Cotizacion[]> {
     return this.cotizacionService.findAll();
   }
+    // Devuelve el próximo número de cotización (último id + 1)
+@Get('proximo')
+async getProximoNumero(): Promise<{ proximo: number }> {
+  const proximo = await this.cotizacionService.getProximoNumero();
+  return { proximo };
+}
 
   @Get(':id')
   findOne(@Param('id', ParseIntPipe) id: number): Promise<Cotizacion> {
@@ -27,11 +33,6 @@ export class CotizacionController {
   remove(@Param('id', ParseIntPipe) id: number): Promise<void> {
     return this.cotizacionService.remove(id);
   }
-  // Devuelve el próximo número de cotización (último id + 1)
-@Get('proximo')
-async getProximoNumero(): Promise<{ proximo: number }> {
-  const proximo = await this.cotizacionService.getProximoNumero();
-  return { proximo };
-}
+
 
 }

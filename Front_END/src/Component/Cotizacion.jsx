@@ -16,16 +16,34 @@ const Cotizacion = ({
   const facturaRef = useRef(null);
   const [guardando, setGuardando] = useState(false);
   const [mensaje, setMensaje] = useState('');
-  const [proximoNumero, setProximoNumero] = useState(2);
-  const fechaFactura = new Date('2025-07-14');
-  const fechaVencimiento = new Date('2025-08-13');
+  const [proximoNumero, setProximoNumero] = useState(1);
+
+  // Fecha dinámica
+  const fechaFactura = new Date();
+  const fechaVencimiento = new Date();
+  fechaVencimiento.setDate(fechaFactura.getDate() + 30);
+
+  // Obtener el próximo número de cotización desde el backend
+  useEffect(() => {
+    const fetchProximoNumero = async () => {
+      try {
+        const res = await axios.get('http://localhost:3000/cotizaciones/proximo');
+        if (res.data && typeof res.data.proximo === 'number') {
+          setProximoNumero(res.data.proximo);
+        }
+      } catch (err) {
+        setProximoNumero(1);
+      }
+    };
+    fetchProximoNumero();
+  }, []);
 
   const subtotal = productos.reduce(
     (acc, item) => acc + limpiarNumero(item.precio) * item.cantidad,
     0
   );
 
-  // Estilos para PDF e impresión
+  // Estilos para impresión y PDF
   useEffect(() => {
     const style = document.createElement('style');
     style.innerHTML = `
@@ -44,12 +62,10 @@ const Cotizacion = ({
     return () => { document.head.removeChild(style); };
   }, []);
 
-  // Guarda y luego descarga el PDF
   const handleGuardarYDescargar = async () => {
     setGuardando(true);
     setMensaje('');
     try {
-      // Guardar cotización (ajusta la URL si es necesario)
       const payload = {
         clienteNombre: cliente.nombreApellidos || cliente.nombre || cliente.razonSocial || '',
         clienteNit: cliente.cliente || '',
@@ -70,10 +86,10 @@ const Cotizacion = ({
           linea: item.linea || '',
         })),
       };
+
       await axios.post('http://localhost:3000/cotizaciones', payload);
       setMensaje('✅ Cotización guardada correctamente');
 
-      // Descargar PDF
       if (facturaRef.current) {
         const opt = {
           margin: 0.2,
@@ -86,6 +102,14 @@ const Cotizacion = ({
         await html2pdf().set(opt).from(facturaRef.current).save();
       }
 
+      // Actualizar consecutivo después de guardar
+      try {
+        const res = await axios.get('http://localhost:3000/cotizaciones/proximo');
+        if (res.data && typeof res.data.proximo === 'number') {
+          setProximoNumero(res.data.proximo);
+        }
+      } catch (err) {}
+
       if (onCotizacionGuardada) onCotizacionGuardada();
     } catch (error) {
       setMensaje('❌ Error al guardar la cotización');
@@ -93,7 +117,6 @@ const Cotizacion = ({
       setGuardando(false);
     }
   };
-  
 
   return (
     <div className="p-4">
@@ -250,7 +273,7 @@ const Cotizacion = ({
         </div>
       </div>
 
-      {/* Botón único para guardar y descargar */}
+      {/* Botón guardar y descargar */}
       <div className="no-print" style={{ marginTop: 32, display: 'flex', justifyContent: 'center', gap: 24 }}>
         <button
           onClick={handleGuardarYDescargar}
