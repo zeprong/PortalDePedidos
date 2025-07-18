@@ -5,6 +5,9 @@ import html2pdf from 'html2pdf.js';
 import LOGO_URL from '../assets/Bc.png';
 import { AuthContext } from '../config/AuthContext';
 import numeroALetras, { limpiarNumero } from '../config/numeroALetras';
+import SuccessPopup from '../config/SuccessPopup.jsx';
+
+
 
 const Cotizacion = ({
   cliente = {},
@@ -17,11 +20,11 @@ const Cotizacion = ({
   const [guardando, setGuardando] = useState(false);
   const [mensaje, setMensaje] = useState('');
   const [proximoNumero, setProximoNumero] = useState(1);
-
+  const [mostrarExito, setMostrarExito] = useState(false);
   // Fecha dinámica
   const fechaFactura = new Date();
   const fechaVencimiento = new Date();
-  fechaVencimiento.setDate(fechaFactura.getDate() + 30);
+  fechaVencimiento.setDate(fechaFactura.getDate() + 10);
 
   // Obtener el próximo número de cotización desde el backend
   useEffect(() => {
@@ -65,6 +68,8 @@ const Cotizacion = ({
   const handleGuardarYDescargar = async () => {
     setGuardando(true);
     setMensaje('');
+    setMostrarExito(true);
+    setTimeout(() => setMostrarExito(false), 15000000); 
     try {
       const payload = {
         clienteNombre: cliente.nombreApellidos || cliente.nombre || cliente.razonSocial || '',
@@ -84,7 +89,9 @@ const Cotizacion = ({
           fechaVcto: item.fechaVcto || '',
           grupo: item.grupo || '',
           linea: item.linea || '',
+          
         })),
+        
       };
 
       await axios.post('http://localhost:3000/cotizaciones', payload);
@@ -290,6 +297,7 @@ const Cotizacion = ({
         >
           {guardando ? 'Guardando...' : 'Guardar y Descargar PDF'}
         </button>
+        {mostrarExito && <SuccessPopup mensaje="✅ Cotización guardada correctamente" onClose={() => setMostrarExito(false)} />}
       </div>
 
       {mensaje && (

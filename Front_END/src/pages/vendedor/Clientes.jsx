@@ -26,15 +26,9 @@ import EditIcon from "@mui/icons-material/Edit";
 import PersonAddIcon from "@mui/icons-material/PersonAdd";
 import SearchIcon from "@mui/icons-material/Search";
 import axios from "axios";
-import {  green, grey } from "@mui/material/colors";
+import { green, grey } from "@mui/material/colors";
 
-// Define la URL base del API aquí
 const API_URL = "http://localhost:3000/clientes";
-
-const estados = [
-  { value: "activo", label: "Activo" },
-  { value: "inactivo", label: "Inactivo" },
-];
 
 const formInicial = {
   id: null,
@@ -57,6 +51,7 @@ export default function Clientes() {
   const [mensaje, setMensaje] = useState("");
   const [error, setError] = useState("");
   const [snackbarOpen, setSnackbarOpen] = useState(false);
+  const [loading, setLoading] = useState(false);
 
   useEffect(() => {
     obtenerClientes();
@@ -127,23 +122,29 @@ export default function Clientes() {
       return;
     }
 
+    setLoading(true);
+    setError("");
     try {
       if (editMode) {
-        await axios.put(`${API_URL}/${form.id}`, form);
-        setMensaje("Cliente actualizado correctamente.");
+        const res = await axios.put(`${API_URL}/${form.id}`, form);
+        // Usa la respuesta correcta para actualizar el estado
         setClientes((prev) =>
-          prev.map((c) => (c.id === form.id ? form : c))
+          prev.map((c) => (c.id === form.id ? res.data : c))
         );
+        setMensaje("Cliente actualizado correctamente.");
       } else {
         const res = await axios.post(API_URL, form);
-        setMensaje("Cliente creado correctamente.");
+        // Añade nuevo cliente desde la respuesta del backend
         setClientes((prev) => [...prev, res.data]);
+        setMensaje("Cliente creado correctamente.");
       }
       setOpen(false);
       setSnackbarOpen(true);
     } catch (err) {
       console.error(err);
       setError("Error al guardar el cliente.");
+    } finally {
+      setLoading(false);
     }
   };
 
@@ -165,6 +166,7 @@ export default function Clientes() {
           startIcon={<PersonAddIcon />}
           onClick={handleOpenCreate}
           sx={{ backgroundColor: green[900], borderRadius: 2 }}
+          disabled={loading}
         >
           Nuevo Cliente
         </Button>
@@ -180,12 +182,13 @@ export default function Clientes() {
         InputProps={{
           startAdornment: <SearchIcon sx={{ mr: 1 }} />,
         }}
-        sx={{ mb: 3, border: '1px solid lightgreen', borderRadius: 2 }}
+        sx={{ mb: 3, border: "1px solid lightgreen", borderRadius: 2 }}
+        disabled={loading}
       />
 
       <TableContainer component={Paper} elevation={3} sx={{ borderRadius: 2 }}>
         <Table>
-          <TableHead sx={{ backgroundColor: green[50], color: 'white'  }}>
+          <TableHead sx={{ backgroundColor: green[50], color: "white" }}>
             <TableRow>
               <TableCell sx={{ fontWeight: "bold" }}>Nombre y Apellidos</TableCell>
               <TableCell sx={{ fontWeight: "bold" }}>Cliente</TableCell>
@@ -213,7 +216,7 @@ export default function Clientes() {
                 <TableCell>{c.tipoNegocio}</TableCell>
                 <TableCell align="center">
                   <Tooltip title="Editar">
-                    <IconButton color="success" onClick={() => handleOpenEdit(c)}>
+                    <IconButton color="success" onClick={() => handleOpenEdit(c)} disabled={loading}>
                       <EditIcon />
                     </IconButton>
                   </Tooltip>
@@ -225,7 +228,7 @@ export default function Clientes() {
       </TableContainer>
 
       <Dialog open={open} onClose={handleClose} fullWidth maxWidth="sm">
-        <DialogTitle sx={{ color: 'green' }}>{editMode ? "Editar Cliente" : "Crear Cliente"}</DialogTitle>
+        <DialogTitle sx={{ color: "green" }}>{editMode ? "Editar Cliente" : "Crear Cliente"}</DialogTitle>
         <DialogContent>
           <Stack spacing={2} mt={1}>
             <TextField
@@ -235,6 +238,7 @@ export default function Clientes() {
               onChange={handleChange}
               fullWidth
               size="small"
+              disabled={loading}
             />
             <TextField
               label="Cliente"
@@ -243,6 +247,7 @@ export default function Clientes() {
               onChange={handleChange}
               fullWidth
               size="small"
+              disabled={loading}
             />
             <TextField
               label="Razón Social"
@@ -251,6 +256,7 @@ export default function Clientes() {
               onChange={handleChange}
               fullWidth
               size="small"
+              disabled={loading}
             />
             <TextField
               label="Dirección"
@@ -259,6 +265,7 @@ export default function Clientes() {
               onChange={handleChange}
               fullWidth
               size="small"
+              disabled={loading}
             />
             <TextField
               label="Teléfono"
@@ -267,6 +274,7 @@ export default function Clientes() {
               onChange={handleChange}
               fullWidth
               size="small"
+              disabled={loading}
             />
             <TextField
               label="Ciudad"
@@ -275,6 +283,7 @@ export default function Clientes() {
               onChange={handleChange}
               fullWidth
               size="small"
+              disabled={loading}
             />
             <TextField
               label="Correo Electrónico"
@@ -283,6 +292,7 @@ export default function Clientes() {
               onChange={handleChange}
               fullWidth
               size="small"
+              disabled={loading}
             />
             <TextField
               label="Tipo de Negocio"
@@ -291,15 +301,16 @@ export default function Clientes() {
               onChange={handleChange}
               fullWidth
               size="small"
+              disabled={loading}
             />
             {error && <Alert severity="error">{error}</Alert>}
           </Stack>
         </DialogContent>
         <DialogActions>
-          <Button onClick={handleClose} sx={{  color: 'green' }}>
+          <Button onClick={handleClose} sx={{ color: "green" }} disabled={loading}>
             Cancelar
           </Button>
-          <Button onClick={handleSubmit} variant="contained" sx={{ backgroundColor: green[900] }}>
+          <Button onClick={handleSubmit} variant="contained" sx={{ backgroundColor: green[900] }} disabled={loading}>
             {editMode ? "Actualizar" : "Guardar"}
           </Button>
         </DialogActions>

@@ -18,15 +18,14 @@ export class Cliente {
   direccion: string;
 
   @Column()
+  correoElectronico: string;
+
+  @Column()
   telefono: string;
 
   @Column()
   ciudad: string;
 
   @Column()
-  correoElectronico: string;
-
-  @Column()
   tipoNegocio: string;
 }
-
