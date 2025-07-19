@@ -13,14 +13,14 @@ export class CreateClienteDto {
   @IsString()
   direccion: string;
 
+  @IsEmail()
+  correoElectronico: string;
+
   @IsString()
   telefono: string;
 
   @IsString()
   ciudad: string;
-
-  @IsEmail()
-  correoElectronico: string;
 
   @IsString()
   tipoNegocio: string;

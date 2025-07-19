@@ -26,6 +26,7 @@ import {
 import EditIcon from "@mui/icons-material/Edit";
 import PersonAddIcon from "@mui/icons-material/PersonAdd";
 import SearchIcon from "@mui/icons-material/Search";
+import UploadFileIcon from "@mui/icons-material/UploadFile";
 import axios from "axios";
 import { green, grey } from "@mui/material/colors";
 
@@ -43,7 +44,7 @@ const estados = [
 ];
 
 const formInicial = {
-  id: null,
+  id_usuario: null,
   documento: "",
   nombre: "",
   usuario: "",
@@ -51,6 +52,7 @@ const formInicial = {
   correo: "",
   rol: "",
   estado: "activo",
+  imagen: null,
 };
 
 export default function Usuarios() {
@@ -85,7 +87,11 @@ export default function Usuarios() {
   };
 
   const handleOpenEdit = (usuario) => {
-    setForm(usuario);
+    setForm({
+      ...usuario,
+      password: "",
+      imagen: null,
+    });
     setEditMode(true);
     setOpen(true);
     resetMensajes();
@@ -102,31 +108,46 @@ export default function Usuarios() {
   };
 
   const handleChange = (e) => {
-    const { name, value } = e.target;
-    setForm((prev) => ({ ...prev, [name]: value }));
+    const { name, value, files } = e.target;
+    if (name === "imagen") {
+      setForm((prev) => ({ ...prev, imagen: files[0] }));
+    } else {
+      setForm((prev) => ({ ...prev, [name]: value }));
+    }
   };
 
   const handleSubmit = async () => {
-    const { documento, nombre, usuario, password, correo, rol, estado } = form;
+    const { documento, nombre, usuario, password, correo, rol, estado, imagen } = form;
 
     if (!documento || !nombre || !usuario || (!editMode && !password) || !correo || !rol || !estado) {
       setError("Todos los campos son obligatorios.");
       return;
     }
 
+    const formData = new FormData();
+    formData.append("documento", documento);
+    formData.append("nombre", nombre);
+    formData.append("usuario", usuario);
+    if (!editMode) formData.append("password", password);
+    formData.append("correo", correo);
+    formData.append("rol", rol);
+    formData.append("estado", estado);
+    if (imagen) formData.append("imagen", imagen);
+
     try {
       if (editMode) {
-        await axios.put(`http://localhost:3000/usuarios/${form.id}`, form);
+        await axios.put(`http://localhost:3000/usuarios/${form.id_usuario}`, formData, {
+          headers: { "Content-Type": "multipart/form-data" },
+        });
         setMensaje("Usuario actualizado correctamente.");
       } else {
-        await axios.post("http://localhost:3000/usuarios", form);
+        await axios.post("http://localhost:3000/usuarios", formData, {
+          headers: { "Content-Type": "multipart/form-data" },
+        });
         setMensaje("Usuario creado correctamente.");
       }
-      setUsuarios(prevUsuarios =>
-        editMode
-          ? prevUsuarios.map(u => u.id === form.id ? form : u)
-          : [...prevUsuarios, form]
-      );
+
+      obtenerUsuarios();
       setOpen(false);
       setSnackbarOpen(true);
     } catch (err) {
@@ -167,7 +188,7 @@ export default function Usuarios() {
         InputProps={{
           startAdornment: <SearchIcon sx={{ mr: 1 }} />,
         }}
-        sx={{ mb: 3, border: '1px solid lightgreen', borderRadius: 2 }}
+        sx={{ mb: 3, border: "1px solid lightgreen", borderRadius: 2 }}
       />
 
       <TableContainer component={Paper} elevation={3} sx={{ borderRadius: 2 }}>
@@ -184,7 +205,7 @@ export default function Usuarios() {
           </TableHead>
           <TableBody>
             {usuariosFiltrados.map((u, i) => (
-              <TableRow key={u.id} sx={{ backgroundColor: i % 2 === 0 ? grey[50] : "white" }}>
+              <TableRow key={u.id_usuario} sx={{ backgroundColor: i % 2 === 0 ? grey[50] : "white" }}>
                 <TableCell align="start">{u.nombre}</TableCell>
                 <TableCell align="center">{u.usuario}</TableCell>
                 <TableCell align="center">{u.correo}</TableCell>
@@ -226,6 +247,10 @@ export default function Usuarios() {
                 <MenuItem key={e.value} value={e.value}>{e.label}</MenuItem>
               ))}
             </TextField>
+            <Button variant="outlined" component="label" startIcon={<UploadFileIcon />}>
+              Subir Imagen
+              <input type="file" name="imagen" hidden onChange={handleChange} accept="image/*" />
+            </Button>
             {error && <Alert severity="error">{error}</Alert>}
           </Stack>
         </DialogContent>

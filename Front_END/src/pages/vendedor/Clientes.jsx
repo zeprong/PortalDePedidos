@@ -26,15 +26,9 @@ import EditIcon from "@mui/icons-material/Edit";
 import PersonAddIcon from "@mui/icons-material/PersonAdd";
 import SearchIcon from "@mui/icons-material/Search";
 import axios from "axios";
-import {  green, grey } from "@mui/material/colors";
+import { green, grey } from "@mui/material/colors";
 
-// Define la URL base del API aquí
 const API_URL = "http://localhost:3000/clientes";
-
-const estados = [
-  { value: "activo", label: "Activo" },
-  { value: "inactivo", label: "Inactivo" },
-];
 
 const formInicial = {
   id: null,
@@ -72,23 +66,23 @@ export default function Clientes() {
     }
   };
 
-  const handleOpenCreate = () => {
-    setForm(formInicial);
-    setEditMode(false);
-    setOpen(true);
-    resetMensajes();
-  };
-
-  const handleOpenEdit = (cliente) => {
-    setForm(cliente);
-    setEditMode(true);
-    setOpen(true);
-    resetMensajes();
-  };
-
   const resetMensajes = () => {
     setError("");
     setMensaje("");
+  };
+
+  const handleOpenCreate = () => {
+    setForm(formInicial);
+    setEditMode(false);
+    resetMensajes();
+    setOpen(true);
+  };
+
+  const handleOpenEdit = (cliente) => {
+    setForm({ ...cliente });
+    setEditMode(true);
+    resetMensajes();
+    setOpen(true);
   };
 
   const handleClose = () => {
@@ -101,28 +95,17 @@ export default function Clientes() {
     setForm((prev) => ({ ...prev, [name]: value }));
   };
 
-  const handleSubmit = async () => {
-    const {
-      nombreApellidos,
-      cliente,
-      razonSocial,
-      direccion,
-      telefono,
-      ciudad,
-      correoElectronico,
-      tipoNegocio,
-    } = form;
+  const validarCampos = () => {
+    for (let key in formInicial) {
+      if (key !== "id" && !form[key]) {
+        return false;
+      }
+    }
+    return true;
+  };
 
-    if (
-      !nombreApellidos ||
-      !cliente ||
-      !razonSocial ||
-      !direccion ||
-      !telefono ||
-      !ciudad ||
-      !correoElectronico ||
-      !tipoNegocio
-    ) {
+  const handleSubmit = async () => {
+    if (!validarCampos()) {
       setError("Todos los campos son obligatorios.");
       return;
     }
@@ -131,9 +114,7 @@ export default function Clientes() {
       if (editMode) {
         await axios.put(`${API_URL}/${form.id}`, form);
         setMensaje("Cliente actualizado correctamente.");
-        setClientes((prev) =>
-          prev.map((c) => (c.id === form.id ? form : c))
-        );
+        obtenerClientes();
       } else {
         const res = await axios.post(API_URL, form);
         setMensaje("Cliente creado correctamente.");
@@ -147,11 +128,10 @@ export default function Clientes() {
     }
   };
 
-  const clientesFiltrados = clientes.filter(
-    (c) =>
-      c.nombreApellidos.toLowerCase().includes(busqueda.toLowerCase()) ||
-      c.cliente.toLowerCase().includes(busqueda.toLowerCase()) ||
-      c.razonSocial.toLowerCase().includes(busqueda.toLowerCase())
+  const clientesFiltrados = clientes.filter((c) =>
+    ["nombreApellidos", "cliente", "razonSocial"].some((campo) =>
+      c[campo]?.toLowerCase().includes(busqueda.toLowerCase())
+    )
   );
 
   return (
@@ -180,12 +160,12 @@ export default function Clientes() {
         InputProps={{
           startAdornment: <SearchIcon sx={{ mr: 1 }} />,
         }}
-        sx={{ mb: 3, border: '1px solid lightgreen', borderRadius: 2 }}
+        sx={{ mb: 3, border: "1px solid lightgreen", borderRadius: 2 }}
       />
 
       <TableContainer component={Paper} elevation={3} sx={{ borderRadius: 2 }}>
         <Table>
-          <TableHead sx={{ backgroundColor: green[50], color: 'white'  }}>
+          <TableHead sx={{ backgroundColor: green[50] }}>
             <TableRow>
               <TableCell sx={{ fontWeight: "bold" }}>Nombre y Apellidos</TableCell>
               <TableCell sx={{ fontWeight: "bold" }}>Cliente</TableCell>
@@ -202,7 +182,10 @@ export default function Clientes() {
           </TableHead>
           <TableBody>
             {clientesFiltrados.map((c, i) => (
-              <TableRow key={c.id} sx={{ backgroundColor: i % 2 === 0 ? grey[50] : "white" }}>
+              <TableRow
+                key={c.id}
+                sx={{ backgroundColor: i % 2 === 0 ? grey[50] : "white" }}
+              >
                 <TableCell>{c.nombreApellidos}</TableCell>
                 <TableCell>{c.cliente}</TableCell>
                 <TableCell>{c.razonSocial}</TableCell>
@@ -225,78 +208,36 @@ export default function Clientes() {
       </TableContainer>
 
       <Dialog open={open} onClose={handleClose} fullWidth maxWidth="sm">
-        <DialogTitle sx={{ color: 'green' }}>{editMode ? "Editar Cliente" : "Crear Cliente"}</DialogTitle>
+        <DialogTitle sx={{ color: "green" }}>
+          {editMode ? "Editar Cliente" : "Crear Cliente"}
+        </DialogTitle>
         <DialogContent>
           <Stack spacing={2} mt={1}>
-            <TextField
-              label="Nombre y Apellidos"
-              name="nombreApellidos"
-              value={form.nombreApellidos}
-              onChange={handleChange}
-              fullWidth
-              size="small"
-            />
-            <TextField
-              label="Cliente"
-              name="cliente"
-              value={form.cliente}
-              onChange={handleChange}
-              fullWidth
-              size="small"
-            />
-            <TextField
-              label="Razón Social"
-              name="razonSocial"
-              value={form.razonSocial}
-              onChange={handleChange}
-              fullWidth
-              size="small"
-            />
-            <TextField
-              label="Dirección"
-              name="direccion"
-              value={form.direccion}
-              onChange={handleChange}
-              fullWidth
-              size="small"
-            />
-            <TextField
-              label="Teléfono"
-              name="telefono"
-              value={form.telefono}
-              onChange={handleChange}
-              fullWidth
-              size="small"
-            />
-            <TextField
-              label="Ciudad"
-              name="ciudad"
-              value={form.ciudad}
-              onChange={handleChange}
-              fullWidth
-              size="small"
-            />
-            <TextField
-              label="Correo Electrónico"
-              name="correoElectronico"
-              value={form.correoElectronico}
-              onChange={handleChange}
-              fullWidth
-              size="small"
-            />
-            <TextField
-              label="Tipo de Negocio"
-              name="tipoNegocio"
-              value={form.tipoNegocio}
-              onChange={handleChange}
-              fullWidth
-              size="small"
-            />
+            {[
+              { label: "Nombre y Apellidos", name: "nombreApellidos" },
+              { label: "Cliente", name: "cliente" },
+              { label: "Razón Social", name: "razonSocial" },
+              { label: "Dirección", name: "direccion" },
+              { label: "Teléfono", name: "telefono" },
+              { label: "Ciudad", name: "ciudad" },
+              { label: "Correo Electrónico", name: "correoElectronico" },
+              { label: "Tipo de Negocio", name: "tipoNegocio" },
+            ].map(({ label, name }) => (
+              <TextField
+                key={name}
+                label={label}
+                name={name}
+                value={form[name]}
+                onChange={handleChange}
+                fullWidth
+                size="small"
+              />
+            ))}
             {error && <Alert severity="error">{error}</Alert>}
           </Stack>
         </DialogContent>
         <DialogActions>
-          <Button onClick={handleClose} sx={{  color: 'green' }}>
+          <Button onClick={handleClose} sx={{ color: "green" }}>
             Cancelar
           </Button>
           <Button onClick={handleSubmit} variant="contained" sx={{ backgroundColor: green[900] }}>
@@ -318,3 +259,4 @@ export default function Clientes() {
     </Container>
   );
 }
+

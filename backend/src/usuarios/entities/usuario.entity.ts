@@ -14,9 +14,6 @@ export class Usuario {
   @Column({ length: 50, unique: true })
   usuario: string;
 
-  @Column({ type: 'mediumblob', nullable: true })
-  imagen: Buffer;
-
   @Column({ length: 255 })
   password: string;
 
@@ -35,4 +32,7 @@ export class Usuario {
 
   @Column({ length: 255 })
   correo: string;
+
+  @Column({ type: 'mediumblob', nullable: true })
+  imagen: Buffer;
 }
