@@ -5,38 +5,25 @@ import { UpdateClienteDto } from './dto/update-cliente.dto';
 
 @Controller('clientes')
 export class ClientesController {
-  constructor(private readonly clientesService: ClientesService) {}
+  constructor(private readonly service: ClientesService) {}
 
-  // Crear cliente
-  @Post()
-  create(@Body() createClienteDto: CreateClienteDto) {
-    return this.clientesService.create(createClienteDto);
-  }
-
-  // Obtener todos los clientes
   @Get()
   findAll() {
-    return this.clientesService.findAll();
+    return this.service.findAll();
   }
 
-  // Obtener cliente por ID
-  @Get(':id')
-  findOne(@Param('id', ParseIntPipe) id: number) {
-    return this.clientesService.findOne(id);
+  @Post()
+  create(@Body() dto: CreateClienteDto) {
+    return this.service.create(dto);
   }
 
-  // Actualizar cliente por ID
-  @Put(':id')
-  update(
-    @Param('id', ParseIntPipe) id: number,
-    @Body() updateClienteDto: UpdateClienteDto,
-  ) {
-    return this.clientesService.update(id, updateClienteDto);
+@Put(':id')
+update(@Param('id') id: string, @Body() updateClienteDto: UpdateClienteDto) {
+  return this.service.update(+id, updateClienteDto);
   }
 
-  // Eliminar cliente por ID
   @Delete(':id')
-  remove(@Param('id', ParseIntPipe) id: number) {
-    return this.clientesService.remove(id);
+  remove(@Param('id') id: string) {
+    return this.service.remove(+id);
   }
 }
