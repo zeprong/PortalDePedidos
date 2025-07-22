@@ -237,17 +237,28 @@ const PortafolioConsumoExistencias = () => {
     }
   }
 
+  // --- VISTA VERTICAL PARA MOVIL ---
+  // Si la pantalla es menor a 640px (sm), mostramos la vista vertical tipo "cards"
+  // Si no, mostramos la tabla tradicional
+  const [isMobile, setIsMobile] = useState(window.innerWidth < 640);
+
+  useEffect(() => {
+    const handleResize = () => setIsMobile(window.innerWidth < 640);
+    window.addEventListener('resize', handleResize);
+    return () => window.removeEventListener('resize', handleResize);
+  }, []);
+
   return (
-    <div className="max-w-6xl mx-auto p-4 sm:p-6 bg-white rounded shadow relative">
+    <div className="max-w-6xl mx-auto p-2 sm:p-4 md:p-6 bg-white rounded shadow relative">
 
       {/* Filtros fuera del contenedor scroll para evitar recorte */}
-      <div className="flex flex-wrap gap-4 mb-6 z-50 relative items-center">
+      <div className="flex flex-col sm:flex-row flex-wrap gap-2 sm:gap-4 mb-4 sm:mb-6 z-50 relative items-stretch sm:items-center">
         <input
           type="text"
           placeholder="Buscar por item o descripción..."
           value={searchText}
           onChange={(e) => setSearchText(e.target.value)}
-          className="w-full sm:w-auto border border-gray-300 rounded px-3 py-2 flex-grow min-w-[200px]"
+          className="w-full sm:w-auto border border-gray-300 rounded px-3 py-2 flex-grow min-w-[150px] sm:min-w-[200px]"
         />
 
         <MultiSelectDropdown
@@ -265,7 +276,7 @@ const PortafolioConsumoExistencias = () => {
         />
 
         {/* Checkbox para mostrar orden */}
-        <label className="flex items-center space-x-2 whitespace-nowrap">
+        <label className="flex items-center space-x-2 whitespace-nowrap mt-2 sm:mt-0">
           <input
             type="checkbox"
             checked={mostrarOrden}
@@ -282,75 +293,130 @@ const PortafolioConsumoExistencias = () => {
         </div>
       )}
 
-      {/* Contenedor tabla con scroll */}
-      <div className="relative overflow-x-auto max-h-[500px] md:max-h-[600px] rounded border border-gray-200">
-        <table className="min-w-full text-sm bg-white">
-          <thead className="sticky top-0 z-20 bg-green-800 text-white shadow">
-            <tr>
-              <th className="px-2 sm:px-3 py-2 border-b text-center">#</th>
-              <th className="px-2 sm:px-3 py-2 border-b">Item</th>
-              <th className="px-2 sm:px-3 py-2 border-b">Descripción</th>
-              <th className="px-2 sm:px-3 py-2 border-b">U.M.</th>
-              <th className="px-2 sm:px-3 py-2 border-b text-right">Factor U.M. Orden</th>
-              <th className="px-2 sm:px-3 py-2 border-b text-right">
-                {mostrarOrden ? 'Existencias Orden' : 'Existencias'}
-              </th>
-              <th className="px-2 sm:px-3 py-2 border-b text-right">
-                {mostrarOrden ? 'Precio Orden' : 'Precio Unitario'}
-              </th>
-              <th className="px-2 sm:px-3 py-2 border-b text-center">Carrito</th>
-            </tr>
-          </thead>
-          <tbody>
-            {itemsFiltrados.map((item, index) => (
-              <tr key={item.item} className="hover:bg-gray-50">
-                <td className="px-2 sm:px-3 py-2 border-b text-center">{index + 1}</td>
-                <td className="px-2 sm:px-3 py-2 border-b">{item.item}</td>
-                <td className="px-2 sm:px-3 py-2 border-b">{item.notasItem}</td>
-                <td className="px-2 sm:px-3 py-2 border-b">{item.unidadMedida}</td>
-                <td className="px-2 sm:px-3 py-2 border-b text-right">{item.factorUMOrden ?? '-'}</td>
-                <td className="px-2 sm:px-3 py-2 border-b text-right">
-                  {mostrarOrden
-                    ? item.cantDisponibleOrdTotal.toLocaleString()
-                    : item.existenciaTotal.toLocaleString()}
-                </td>
-                <td className="px-2 sm:px-3 py-2 border-b text-right">
-                  {(mostrarOrden
-                    ? item.precioOrdenPromedio
-                    : item.precioUnitarioPromedio
-                  ).toLocaleString('es-CO', {
-                    style: 'currency',
-                    currency: 'COP',
-                    minimumFractionDigits: 2,
-                  })}
-                </td>
-                <td className="px-2 sm:px-3 py-2 border-b text-center">
-                  <button
-                    onClick={() => handleAddToCartClick(item)}
-                    className="p-2 rounded-full bg-gray-100 hover:bg-gray-200 text-gray-700 hover:text-gray-900 transition"
-                    title="Agregar al carrito"
-                  >
-                    <ShoppingCart size={20} />
-                  </button>
-                </td>
-              </tr>
-            ))}
-            {itemsFiltrados.length === 0 && (
+      {/* Vista vertical para móvil */}
+      {isMobile ? (
+        <div className="flex flex-col gap-3">
+          {itemsFiltrados.length === 0 && (
+            <div className="text-center py-4 text-gray-500">
+              No se encontraron registros.
+            </div>
+          )}
+          {itemsFiltrados.map((item, index) => (
+            <div
+              key={item.item}
+              className="border border-gray-200 rounded-lg shadow-sm p-3 flex flex-col gap-2 bg-white"
+            >
+              <div className="flex items-center justify-between">
+                <span className="text-xs text-gray-500 font-semibold">#{index + 1}</span>
+                <button
+                  onClick={() => handleAddToCartClick(item)}
+                  className="p-2 rounded-full bg-gray-100 hover:bg-gray-200 text-gray-700 hover:text-gray-900 transition"
+                  title="Agregar al carrito"
+                >
+                  <ShoppingCart size={18} />
+                </button>
+              </div>
+              <div className="font-bold text-green-900">{item.item}</div>
+              <div className="text-gray-800">{item.notasItem}</div>
+              <div className="flex flex-wrap gap-2 text-xs text-gray-600">
+                <span>U.M.: <b>{item.unidadMedida}</b></span>
+                {item.factorUMOrden && (
+                  <span>Factor U.M. Orden: <b>{item.factorUMOrden}</b></span>
+                )}
+              </div>
+              <div className="flex flex-wrap gap-2 text-xs">
+                <span>
+                  {mostrarOrden ? 'Exist. Orden:' : 'Existencias:'}{' '}
+                  <b>{mostrarOrden ? item.cantDisponibleOrdTotal.toLocaleString() : item.existenciaTotal.toLocaleString()}</b>
+                </span>
+                <span>
+                  {mostrarOrden ? 'Precio Orden:' : 'Precio Unit.:'}{' '}
+                  <b>
+                    {(mostrarOrden
+                      ? item.precioOrdenPromedio
+                      : item.precioUnitarioPromedio
+                    ).toLocaleString('es-CO', {
+                      style: 'currency',
+                      currency: 'COP',
+                      minimumFractionDigits: 2,
+                    })}
+                  </b>
+                </span>
+              </div>
+            </div>
+          ))}
+        </div>
+      ) : (
+        // Tabla tradicional para escritorio/tablet
+        <div className="relative overflow-x-auto max-h-[400px] sm:max-h-[500px] md:max-h-[600px] rounded border border-gray-200">
+          <table className="min-w-full text-xs sm:text-sm bg-white">
+            <thead className="sticky top-0 z-20 bg-green-800 text-white shadow">
               <tr>
-                <td colSpan="8" className="text-center py-4 text-gray-500">
-                  No se encontraron registros.
-                </td>
+                <th className="px-1 sm:px-2 md:px-3 py-2 border-b text-center">#</th>
+                <th className="px-1 sm:px-2 md:px-3 py-2 border-b">Item</th>
+                <th className="px-1 sm:px-2 md:px-3 py-2 border-b">Descripción</th>
+                <th className="px-1 sm:px-2 md:px-3 py-2 border-b">U.M.</th>
+                <th className="px-1 sm:px-2 md:px-3 py-2 border-b text-right hidden xs:table-cell">Factor U.M. Orden</th>
+                <th className="px-1 sm:px-2 md:px-3 py-2 border-b text-right">
+                  {mostrarOrden ? 'Exist. Orden' : 'Existencias'}
+                </th>
+                <th className="px-1 sm:px-2 md:px-3 py-2 border-b text-right">
+                  {mostrarOrden ? 'Precio Orden' : 'Precio Unit.'}
+                </th>
+                <th className="px-1 sm:px-2 md:px-3 py-2 border-b text-center">Carrito</th>
               </tr>
-            )}
-          </tbody>
-        </table>
-      </div>
+            </thead>
+            <tbody>
+              {itemsFiltrados.map((item, index) => (
+                <tr key={item.item} className="hover:bg-gray-50">
+                  <td className="px-1 sm:px-2 md:px-3 py-2 border-b text-center">{index + 1}</td>
+                  <td className="px-1 sm:px-2 md:px-3 py-2 border-b">{item.item}</td>
+                  <td className="px-1 sm:px-2 md:px-3 py-2 border-b">{item.notasItem}</td>
+                  <td className="px-1 sm:px-2 md:px-3 py-2 border-b">{item.unidadMedida}</td>
+                  <td className="px-1 sm:px-2 md:px-3 py-2 border-b text-right hidden xs:table-cell">{item.factorUMOrden ?? '-'}</td>
+                  <td className="px-1 sm:px-2 md:px-3 py-2 border-b text-right">
+                    {mostrarOrden
+                      ? item.cantDisponibleOrdTotal.toLocaleString()
+                      : item.existenciaTotal.toLocaleString()}
+                  </td>
+                  <td className="px-1 sm:px-2 md:px-3 py-2 border-b text-right">
+                    {(mostrarOrden
+                      ? item.precioOrdenPromedio
+                      : item.precioUnitarioPromedio
+                    ).toLocaleString('es-CO', {
+                      style: 'currency',
+                      currency: 'COP',
+                      minimumFractionDigits: 2,
+                    })}
+                  </td>
+                  <td className="px-1 sm:px-2 md:px-3 py-2 border-b text-center">
+                    <button
+                      onClick={() => handleAddToCartClick(item)}
+                      className="p-2 rounded-full bg-gray-100 hover:bg-gray-200 text-gray-700 hover:text-gray-900 transition"
+                      title="Agregar al carrito"
+                    >
+                      <ShoppingCart size={18} />
+                    </button>
+                  </td>
+                </tr>
+              ))}
+              {itemsFiltrados.length === 0 && (
+                <tr>
+                  <td colSpan="8" className="text-center py-4 text-gray-500">
+                    No se encontraron registros.
+                  </td>
+                </tr>
+              )}
+            </tbody>
+          </table>
+        </div>
+      )}
 
       {/* Modal para seleccionar lote */}
       {modalLoteOpen && (
-        <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50 p-4">
-          <div className="bg-white rounded-lg shadow-lg max-w-md w-full p-6 relative animate-fadeIn">
-            <h3 className="text-xl font-semibold mb-4 text-gray-800">
+        <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50 p-2 sm:p-4">
+          <div className="bg-white rounded-lg shadow-lg w-full max-w-xs sm:max-w-md p-4 sm:p-6 relative animate-fadeIn">
+            <h3 className="text-lg sm:text-xl font-semibold mb-4 text-gray-800">
               Selecciona un lote para <span className="text-green-700">{productoSeleccionado.notasItem}</span>
             </h3>
 
@@ -395,14 +461,14 @@ const PortafolioConsumoExistencias = () => {
                 placeholder="Ingrese la cantidad"
               />
               {loteSeleccionado && (
-                <p className="mt-1 text-sm text-gray-500">
+                <p className="mt-1 text-xs sm:text-sm text-gray-500">
                   Máximo disponible: <span className="font-semibold">{mostrarOrden ? loteSeleccionado.cantDisponibleOrd : loteSeleccionado.existencia}</span>
                 </p>
               )}
             </div>
 
             {/* Botones */}
-            <div className="flex justify-end space-x-3">
+            <div className="flex flex-col sm:flex-row justify-end sm:space-x-3 space-y-2 sm:space-y-0">
               <button
                 onClick={() => setModalLoteOpen(false)}
                 className="px-4 py-2 bg-gray-300 rounded hover:bg-gray-400 transition"
@@ -433,7 +499,7 @@ const PortafolioConsumoExistencias = () => {
             {/* Botón cerrar en la esquina */}
             <button
               onClick={() => setModalLoteOpen(false)}
-              className="absolute top-3 right-3 text-gray-500 hover:text-gray-700 focus:outline-none"
+              className="absolute top-2 right-2 sm:top-3 sm:right-3 text-gray-500 hover:text-gray-700 focus:outline-none"
               aria-label="Cerrar modal"
               type="button"
             >
@@ -448,7 +514,7 @@ const PortafolioConsumoExistencias = () => {
       {/* Botón para abrir carrito */}
       <button
         onClick={() => setPopupOpen(true)}
-        className="fixed bottom-4 right-4 sm:bottom-6 sm:right-6 bg-green-600 hover:bg-green-700 text-white rounded-full shadow-lg w-12 h-12 sm:w-14 sm:h-14 flex items-center justify-center text-2xl z-50"
+        className="fixed bottom-2 right-2 sm:bottom-4 sm:right-4 md:bottom-6 md:right-6 bg-green-600 hover:bg-green-700 text-white rounded-full shadow-lg w-12 h-12 sm:w-14 sm:h-14 flex items-center justify-center text-2xl z-50"
         title="Ver carrito"
       >
         🛒

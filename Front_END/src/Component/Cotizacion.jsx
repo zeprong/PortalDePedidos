@@ -4,13 +4,13 @@ import axios from 'axios';
 import html2pdf from 'html2pdf.js';
 import LOGO_URL from '../assets/Bc.png';
 import { AuthContext } from '../config/AuthContext';
-import numeroALetras, { limpiarNumero } from '../config/numeroALetras';
+import numeroALetras, { limpiarNumero } from '../config/numeroALetras'; // Ajusta esta ruta según sea necesario
 
 const Cotizacion = ({
   cliente = {},
   productos = [],
   observaciones = '',
-  onCotizacionGuardada
+  onCotizacionGuardada,
 }) => {
   const { user } = useContext(AuthContext);
   const facturaRef = useRef(null);
@@ -21,7 +21,8 @@ const Cotizacion = ({
   // Fecha dinámica
   const fechaFactura = new Date();
   const fechaVencimiento = new Date();
-  fechaVencimiento.setDate(fechaFactura.getDate() + 30);
+  // Cambiar a una semana (7 días)
+  fechaVencimiento.setDate(fechaFactura.getDate() + 7);
 
   // Obtener el próximo número de cotización desde el backend
   useEffect(() => {
@@ -32,7 +33,8 @@ const Cotizacion = ({
           setProximoNumero(res.data.proximo);
         }
       } catch (err) {
-        setProximoNumero(1);
+        console.error('Error al obtener el próximo número de cotización:', err);
+        setProximoNumero(1); // Fallback en caso de error
       }
     };
     fetchProximoNumero();
@@ -43,7 +45,7 @@ const Cotizacion = ({
     0
   );
 
-  // Estilos para impresión y PDF
+  // Estilos para impresión, PDF y responsividad (se inyectan dinámicamente)
   useEffect(() => {
     const style = document.createElement('style');
     style.innerHTML = `
@@ -57,9 +59,58 @@ const Cotizacion = ({
         body { -webkit-print-color-adjust: exact !important; print-color-adjust: exact !important; }
         .no-print { display: none !important; }
       }
+      /* Responsividad */
+      @media (max-width: 900px) {
+        .cotiz-container {
+          padding: 8px !important;
+          max-width: 100vw !important;
+        }
+        .cotiz-header {
+          flex-direction: column !important;
+          align-items: flex-start !important;
+          gap: 12px !important;
+        }
+        .cotiz-header-logo {
+          margin-right: 0 !important;
+          margin-bottom: 8px !important;
+        }
+        .cotiz-header-info {
+          margin-left: 0 !important;
+        }
+        .cotiz-table th, .cotiz-table td {
+          font-size: 11px !important;
+          padding: 2px !important;
+        }
+      }
+      @media (max-width: 600px) {
+        .cotiz-container {
+          padding: 2px !important;
+          font-size: 11px !important;
+        }
+        .cotiz-header-logo img {
+          height: 60px !important;
+        }
+        .cotiz-table th, .cotiz-table td {
+          font-size: 10px !important;
+          padding: 1px !important;
+        }
+        .cotiz-table {
+          margin-bottom: 8px !important;
+        }
+        .cotiz-totales-table {
+          width: 100% !important;
+        }
+      }
+      @media (orientation: landscape) and (max-width: 900px) {
+        .cotiz-container {
+          max-width: 100vw !important;
+        }
+      }
     `;
     document.head.appendChild(style);
-    return () => { document.head.removeChild(style); };
+    return () => {
+      document.head.removeChild(style);
+    };
   }, []);
 
   const handleGuardarYDescargar = async () => {
@@ -108,10 +159,13 @@ const Cotizacion = ({
         if (res.data && typeof res.data.proximo === 'number') {
           setProximoNumero(res.data.proximo);
         }
-      } catch (err) {}
+      } catch (err) {
+        console.error('Error al actualizar el próximo número de cotización:', err);
+      }
 
       if (onCotizacionGuardada) onCotizacionGuardada();
     } catch (error) {
+      console.error('Error al guardar la cotización:', error);
       setMensaje('❌ Error al guardar la cotización');
     } finally {
       setGuardando(false);
@@ -122,6 +176,7 @@ const Cotizacion = ({
     <div className="p-4">
       <div
         ref={facturaRef}
+        className="cotiz-container"
         style={{
           background: '#fff',
           color: '#222',
@@ -129,30 +184,49 @@ const Cotizacion = ({
           fontFamily: 'Arial, sans-serif',
           padding: 24,
           maxWidth: 900,
-          margin: '0 auto'
+          margin: '0 auto',
         }}
       >
         {/* Encabezado */}
-        <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: 24 }}>
-          <div style={{ display: 'flex', alignItems: 'center' }}>
+        <div
+          className="cotiz-header"
+          style={{
+            display: 'flex',
+            justifyContent: 'space-between',
+            alignItems: 'center',
+            marginBottom: 24,
+            flexWrap: 'wrap',
+          }}
+        >
+          <div className="cotiz-header-logo" style={{ display: 'flex', alignItems: 'center' }}>
             <img src={LOGO_URL} alt="Logo" style={{ height: 100, marginRight: 16 }} />
-            <div style={{ fontSize: 12, lineHeight: 1.3, marginLeft: 100 }}>
+            <div
+              className="cotiz-header-info"
+              style={{ fontSize: 12, lineHeight: 1.3, marginLeft: 100 }}
+            >
               <div style={{ fontWeight: 'bold', textAlign: 'center' }}>SAN MIGUEL GROUP SAS</div>
               <div style={{ textAlign: 'center' }}>NIT 901757169-3 - RESPONSABLE DE IVA</div>
               <div style={{ textAlign: 'center' }}>Actividad Económica 4773</div>
               <div style={{ textAlign: 'center' }}>Bodega Ventas Punto</div>
-              <div style={{ textAlign: 'center' }}>notificaciones@smgroupsas.com.co | 310 5164909</div>
+              <div style={{ textAlign: 'center' }}>
+                notificaciones@smgroupsas.com.co | 310 5164909
+              </div>
               <div style={{ textAlign: 'center' }}>Calle 17 No 19-46, SAN MIGUEL</div>
             </div>
           </div>
-          <div style={{
-            border: '1px solid #bbb',
-            padding: 8,
-            textAlign: 'center',
-            fontSize: 12,
-            minWidth: 140
-          }}>
-            <div style={{ fontWeight: 'bold' }}>{`COTIZACIÓN N° ${String(proximoNumero).padStart(4, '0')}`}</div>
+          <div
+            style={{
+              border: '1px solid #bbb',
+              padding: 8,
+              textAlign: 'center',
+              fontSize: 12,
+              minWidth: 140,
+              marginTop: 8,
+            }}
+          >
+            <div style={{ fontWeight: 'bold' }}>{`COTIZACIÓN N° ${String(
+              proximoNumero
+            ).padStart(4, '0')}`}</div>
             <div>Fecha: {fechaFactura.toLocaleDateString('es-CO')}</div>
           </div>
         </div>
@@ -180,48 +254,60 @@ const Cotizacion = ({
         </table>
 
         {/* Productos */}
-        <table className="cotiz-table">
-          <thead>
-            <tr>
-              <th>No</th>
-              <th>ITEM</th>
-              <th>DESCRIPCIÓN</th>
-              <th>CANT.</th>
-              <th>LOTE</th>
-              <th>FECHA VCTO</th>
-              <th>VR. UNIT</th>
-              <th>VR. TOTAL</th>
-            </tr>
-          </thead>
-          <tbody>
-            {productos.length === 0 ? (
+        <div style={{ overflowX: 'auto' }}>
+          <table className="cotiz-table">
+            <thead>
               <tr>
-                <td colSpan={8} style={{ textAlign: 'center', color: '#888' }}>Sin productos</td>
+                <th>No</th>
+                <th>ITEM</th>
+                <th>DESCRIPCIÓN</th>
+                <th>CANT.</th>
+                <th>LOTE</th>
+                <th>FECHA VCTO</th>
+                <th>VR. UNIT</th>
+                <th>VR. TOTAL</th>
               </tr>
-            ) : (
-              productos.map((item, idx) => (
-                <tr key={item.codigo ?? idx}>
-                  <td style={{ textAlign: 'center' }}>{idx + 1}</td>
-                  <td style={{ textAlign: 'center' }}>{String(item.item ?? item.codigo ?? '-')}</td>
-                  <td>{item.descripcion}</td>
-                  <td style={{ textAlign: 'center' }}>{item.cantidad}</td>
-                  <td style={{ textAlign: 'center' }}>{item.lote || '-'}</td>
-                  <td style={{ textAlign: 'center' }}>{item.fechaVcto || '-'}</td>
-                  <td style={{ textAlign: 'right' }}>
-                    {limpiarNumero(item.precio).toLocaleString('es-CO', { style: 'currency', currency: 'COP' })}
-                  </td>
-                  <td style={{ textAlign: 'right', fontWeight: 'bold' }}>
-                    {(limpiarNumero(item.precio) * item.cantidad).toLocaleString('es-CO', { style: 'currency', currency: 'COP' })}
+            </thead>
+            <tbody>
+              {productos.length === 0 ? (
+                <tr>
+                  <td colSpan={8} style={{ textAlign: 'center', color: '#888' }}>
+                    Sin productos
                   </td>
                 </tr>
-              ))
-            )}
-          </tbody>
-        </table>
+              ) : (
+                productos.map((item, idx) => (
+                  <tr key={item.codigo ?? idx}>
+                    <td style={{ textAlign: 'center' }}>{idx + 1}</td>
+                    <td style={{ textAlign: 'center' }}>
+                      {String(item.item ?? item.codigo ?? '-')}
+                    </td>
+                    <td>{item.descripcion}</td>
+                    <td style={{ textAlign: 'center' }}>{item.cantidad}</td>
+                    <td style={{ textAlign: 'center' }}>{item.lote || '-'}</td>
+                    <td style={{ textAlign: 'center' }}>{item.fechaVcto || '-'}</td>
+                    <td style={{ textAlign: 'right' }}>
+                      {limpiarNumero(item.precio).toLocaleString('es-CO', {
+                        style: 'currency',
+                        currency: 'COP',
+                      })}
+                    </td>
+                    <td style={{ textAlign: 'right', fontWeight: 'bold' }}>
+                      {(limpiarNumero(item.precio) * item.cantidad).toLocaleString('es-CO', {
+                        style: 'currency',
+                        currency: 'COP',
+                      })}
+                    </td>
+                  </tr>
+                ))
+              )}
+            </tbody>
+          </table>
+        </div>
 
         {/* Totales */}
         <div style={{ display: 'flex', justifyContent: 'flex-end', marginBottom: 12 }}>
-          <table className="cotiz-table" style={{ width: 300, border: 'none' }}>
+          <table className="cotiz-table cotiz-totales-table" style={{ width: 300, border: 'none' }}>
             <tbody>
               <tr>
                 <td style={{ textAlign: 'right', border: 'none' }}>Concepto</td>
@@ -253,19 +339,22 @@ const Cotizacion = ({
           {cliente.nombre && <div style={{ marginTop: 5 }}>Cliente: {cliente.nombre}</div>}
         </div>
 
-        <div style={{
-          display: 'flex',
-          justifyContent: 'space-between',
-          marginTop: 24,
-          paddingTop: 8,
-          borderTop: '1px solid #ddd',
-          fontSize: 12
-        }}>
-          <div>
+        <div
+          style={{
+            display: 'flex',
+            justifyContent: 'space-between',
+            marginTop: 24,
+            paddingTop: 8,
+            borderTop: '1px solid #ddd',
+            fontSize: 12,
+            flexWrap: 'wrap',
+          }}
+        >
+          <div style={{ marginBottom: 8 }}>
             <div style={{ fontWeight: 'bold' }}>Representante de ventas:</div>
             <div>{user?.nombre || 'No disponible'}</div>
           </div>
-          <div style={{ textAlign: 'right', color: '#555' }}>
+          <div style={{ textAlign: 'right', color: '#555', marginBottom: 8 }}>
             <div>Tipo de pago: Crédito</div>
             <div>Medio de pago: Transferencia</div>
             <div>Vencimiento: {fechaVencimiento.toLocaleDateString('es-CO')}</div>
@@ -285,7 +374,7 @@ const Cotizacion = ({
             border: 'none',
             borderRadius: 6,
             fontSize: 16,
-            cursor: guardando ? 'not-allowed' : 'pointer'
+            cursor: guardando ? 'not-allowed' : 'pointer',
           }}
         >
           {guardando ? 'Guardando...' : 'Guardar y Descargar PDF'}
@@ -293,7 +382,9 @@ const Cotizacion = ({
       </div>
 
       {mensaje && (
-        <div style={{ marginTop: 24, textAlign: 'center', color: '#b91c1c', fontWeight: 'bold' }}>{mensaje}</div>
+        <div style={{ marginTop: 24, textAlign: 'center', color: '#b91c1c', fontWeight: 'bold' }}>
+          {mensaje}
+        </div>
       )}
     </div>
   );

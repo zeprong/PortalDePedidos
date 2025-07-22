@@ -5,11 +5,13 @@ import {
   Typography,
   Avatar,
   IconButton,
-
   Tooltip,
   Stack,
   useMediaQuery,
   useTheme,
+  Box,
+  Drawer,
+  Divider,
 } from "@mui/material";
 import { AuthContext } from "../config/AuthContext";
 import UserProfileSidebar from "./UserProfileModal";
@@ -36,6 +38,7 @@ const Header = () => {
 
   const theme = useTheme();
   const isMobile = useMediaQuery(theme.breakpoints.down("sm"));
+  const isTablet = useMediaQuery(theme.breakpoints.down("md"));
 
   const openSidebar = () => setIsSidebarOpen(true);
   const closeSidebar = () => setIsSidebarOpen(false);
@@ -48,48 +51,102 @@ const Header = () => {
         sx={{
           backgroundColor: "#ffffff",
           color: "#000",
-          px: 3,
-          py: 1,
+          px: { xs: 1, sm: 2, md: 3 },
+          py: { xs: 0.5, sm: 1 },
           borderBottom: `1px solid ${grey[200]}`,
         }}
       >
-        <Toolbar sx={{ justifyContent: "space-between", minHeight: 70 }}>
+        <Toolbar
+          sx={{
+            justifyContent: "space-between",
+            minHeight: { xs: 56, sm: 64, md: 70 },
+            px: { xs: 0, sm: 1, md: 2 },
+          }}
+        >
           {/* Título */}
           <Typography
-            variant={isMobile ? "subtitle1" : "h6"}
+            variant={isMobile ? "subtitle2" : isTablet ? "subtitle1" : "h6"}
             fontWeight="bold"
-            sx={{ color: blueGrey[800], letterSpacing: 0.5 }}
+            sx={{
+              color: blueGrey[800],
+              letterSpacing: 0.5,
+              fontSize: { xs: 15, sm: 18, md: 22 },
+              whiteSpace: "nowrap",
+              overflow: "hidden",
+              textOverflow: "ellipsis",
+              maxWidth: { xs: "60vw", sm: "70vw", md: "none" },
+            }}
           >
             {getPanelTitle(user?.rol)}
           </Typography>
 
           {/* Usuario */}
-          <Stack direction="row" alignItems="center" spacing={2}>
-            <Stack direction="column" alignItems="flex-end" spacing={0.3}>
-              <Typography
-                variant="subtitle1"
-                sx={{ fontWeight: 600, fontSize: 15 }}
+          <Stack
+            direction="row"
+            alignItems="center"
+            spacing={isMobile ? 1 : 2}
+            sx={{
+              minWidth: 0,
+              flexShrink: 0,
+            }}
+          >
+            {/* Oculta el nombre y rol en pantallas muy pequeñas */}
+            {!isMobile && (
+              <Stack
+                direction="column"
+                alignItems="flex-end"
+                spacing={0.3}
+                sx={{
+                  minWidth: 0,
+                  maxWidth: { xs: 80, sm: 120, md: 180 },
+                }}
               >
-                {user?.nombre || "Invitado"}
-              </Typography>
-              {user?.rol && (
                 <Typography
-                  variant="caption"
-                  sx={{ fontSize: 12, color: grey[600], textTransform: "capitalize" }}
+                  variant="subtitle1"
+                  sx={{
+                    fontWeight: 600,
+                    fontSize: { xs: 13, sm: 15 },
+                    whiteSpace: "nowrap",
+                    overflow: "hidden",
+                    textOverflow: "ellipsis",
+                  }}
                 >
-                  {user?.rol}
+                  {user?.nombre || "Invitado"}
                 </Typography>
-              )}
-            </Stack>
+                {user?.rol && (
+                  <Typography
+                    variant="caption"
+                    sx={{
+                      fontSize: 12,
+                      color: grey[600],
+                      textTransform: "capitalize",
+                      whiteSpace: "nowrap",
+                      overflow: "hidden",
+                      textOverflow: "ellipsis",
+                    }}
+                  >
+                    {user?.rol}
+                  </Typography>
+                )}
+              </Stack>
+            )}
 
             <Tooltip title="Ver perfil">
-              <IconButton onClick={openSidebar} sx={{ p: 0 }}>
+              <IconButton
+                onClick={openSidebar}
+                sx={{
+                  p: 0,
+                  ml: isMobile ? 0 : 1,
+                  width: { xs: 38, sm: 44 },
+                  height: { xs: 38, sm: 44 },
+                }}
+              >
                 <Avatar
                   alt={user?.nombre || "Avatar"}
                   src={user?.avatar || "https://i.pravatar.cc/150"}
                   sx={{
-                    width: 44,
-                    height: 44,
+                    width: { xs: 38, sm: 44 },
+                    height: { xs: 38, sm: 44 },
                     border: `2px solid ${green[500]}`,
                     boxShadow: "0 2px 8px rgba(0, 0, 0, 0.1)",
                     transition: "0.3s ease",
@@ -109,17 +166,50 @@ const Header = () => {
         </Toolbar>
       </AppBar>
 
-      {/* Sidebar de perfil */}
-      <UserProfileSidebar
-        isOpen={isSidebarOpen}
+      {/* Sidebar de perfil adaptado a dispositivos móviles */}
+      <Drawer
+        anchor={isMobile ? "bottom" : "right"}
+        open={isSidebarOpen}
         onClose={closeSidebar}
-        user={user}
-        loading={!user}
-      />
+        PaperProps={{
+          sx: {
+            width: { xs: "100vw", sm: 350, md: 400 },
+            maxWidth: "100vw",
+            borderTopLeftRadius: isMobile ? 16 : 0,
+            borderTopRightRadius: isMobile ? 16 : 0,
+            borderRadius: isMobile ? "16px 16px 0 0" : "0 0 0 0",
+            minHeight: isMobile ? "40vh" : "auto",
+          },
+        }}
+        transitionDuration={250}
+      >
+        <Box
+          sx={{
+            p: { xs: 2, sm: 3 },
+            pt: { xs: 2, sm: 3 },
+            minHeight: isMobile ? "40vh" : "auto",
+            display: "flex",
+            flexDirection: "column",
+            alignItems: "center",
+          }}
+        >
+          <UserProfileSidebar
+            isOpen={isSidebarOpen}
+            onClose={closeSidebar}
+            user={user}
+            loading={!user}
+            mobile={isMobile}
+          />
+        </Box>
+        <Divider />
+        <Box sx={{ textAlign: "center", py: 1 }}>
+          <Typography variant="caption" color="text.secondary">
+            © {new Date().getFullYear()} Mi Empresa
+          </Typography>
+        </Box>
+      </Drawer>
     </>
   );
 };
 
 export default Header;
-
-
