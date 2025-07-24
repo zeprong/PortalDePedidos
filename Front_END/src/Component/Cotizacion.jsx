@@ -2,15 +2,18 @@ import React, { useContext, useRef, useState, useEffect } from 'react';
 import PropTypes from 'prop-types';
 import axios from 'axios';
 import html2pdf from 'html2pdf.js';
-import LOGO_URL from '../assets/Bc.png';
+import LOGO_URL from '../assets/Bc.png'; // Ajusta la ruta según tu proyecto
 import { AuthContext } from '../config/AuthContext';
-import numeroALetras, { limpiarNumero } from '../config/numeroALetras'; // Ajusta esta ruta según sea necesario
+import numeroALetras, { limpiarNumero } from '../config/numeroALetras';
 
 const Cotizacion = ({
   cliente = {},
   productos = [],
   observaciones = '',
   onCotizacionGuardada,
+  soloImprimir = false,
+  numeroCotizacion, // Prop que contendrá el ID real si es una reimpresión
+  fechaDocumento,   // Prop que contendrá la fecha real si es una reimpresión
 }) => {
   const { user } = useContext(AuthContext);
   const facturaRef = useRef(null);
@@ -18,34 +21,38 @@ const Cotizacion = ({
   const [mensaje, setMensaje] = useState('');
   const [proximoNumero, setProximoNumero] = useState(1);
 
-  // Fecha dinámica
-  const fechaFactura = new Date();
-  const fechaVencimiento = new Date();
-  // Cambiar a una semana (7 días)
-  fechaVencimiento.setDate(fechaFactura.getDate() + 7);
+  // Usa la fechaDocumento si está presente (para reimpresión), si no, usa la fecha actual
+  const fechaVisual = fechaDocumento ? new Date(fechaDocumento) : new Date();
+  
+  // Calcula la fecha de vencimiento a partir de la fechaVisual
+  const fechaVencimiento = new Date(fechaVisual);
+  fechaVencimiento.setDate(fechaVencimiento.getDate() + 7);
 
-  // Obtener el próximo número de cotización desde el backend
+  // Obtener el próximo número de cotización SOLO si estamos en modo creación
+  // y si no se ha pasado un numeroCotizacion explícitamente
   useEffect(() => {
-    const fetchProximoNumero = async () => {
-      try {
-        const res = await axios.get('http://localhost:3000/cotizaciones/proximo');
-        if (res.data && typeof res.data.proximo === 'number') {
-          setProximoNumero(res.data.proximo);
+    if (!soloImprimir && !numeroCotizacion) { // Condición clave para no sobreescribir el ID real
+      const fetchProximoNumero = async () => {
+        try {
+          const res = await axios.get('http://localhost:3000/cotizaciones/proximo');
+          if (res.data && typeof res.data.proximo === 'number') {
+            setProximoNumero(res.data.proximo);
+          }
+        } catch (err) {
+          console.error('Error al obtener el próximo número de cotización:', err); // Mantener para depuración
+          setProximoNumero(1); // Fallback en caso de error
         }
-      } catch (err) {
-        console.error('Error al obtener el próximo número de cotización:', err);
-        setProximoNumero(1); // Fallback en caso de error
-      }
-    };
-    fetchProximoNumero();
-  }, []);
+      };
+      fetchProximoNumero();
+    }
+  }, [soloImprimir, numeroCotizacion]); // Depende de estas props
 
   const subtotal = productos.reduce(
     (acc, item) => acc + limpiarNumero(item.precio) * item.cantidad,
     0
   );
 
-  // Estilos para impresión, PDF y responsividad (se inyectan dinámicamente)
+  // Inyección de estilos dinámicos (mantener esto para la impresión y responsive)
   useEffect(() => {
     const style = document.createElement('style');
     style.innerHTML = `
@@ -59,7 +66,6 @@ const Cotizacion = ({
         body { -webkit-print-color-adjust: exact !important; print-color-adjust: exact !important; }
         .no-print { display: none !important; }
       }
-      /* Responsividad */
       @media (max-width: 900px) {
         .cotiz-container {
           padding: 8px !important;
@@ -116,6 +122,33 @@ const Cotizacion = ({
   const handleGuardarYDescargar = async () => {
     setGuardando(true);
     setMensaje('');
+
+    // Determine el número de cotización a usar en el nombre del archivo PDF
+    // Prioriza numeroCotizacion (si es una reimpresión)
+    // Sino, usa proximoNumero (si es una nueva creación)
+    const currentCotizacionNumber = numeroCotizacion
+      ? String(numeroCotizacion).padStart(4, '0')
+      : String(proximoNumero).padStart(4, '0');
+
+    // Lógica para solo imprimir (cuando soloImprimir es true)
+    if (soloImprimir) {
+      if (facturaRef.current) {
+        const opt = {
+          margin: 0.2,
+          filename: `Cotizacion_${currentCotizacionNumber}.pdf`,
+          image: { type: 'jpeg', quality: 0.98 },
+          html2canvas: { scale: 2, useCORS: true },
+          jsPDF: { unit: 'mm', format: 'a4', orientation: 'portrait' },
+          pagebreak: { mode: ['avoid-all', 'css', 'legacy'] },
+        };
+        await html2pdf().set(opt).from(facturaRef.current).save();
+        setMensaje('✅ PDF generado correctamente.');
+      }
+      setGuardando(false);
+      return; // Salir de la función
+    }
+
+    // Lógica para guardar y luego descargar (cuando soloImprimir es false)
     try {
       const payload = {
         clienteNombre: cliente.nombreApellidos || cliente.nombre || cliente.razonSocial || '',
@@ -126,6 +159,7 @@ const Cotizacion = ({
         representanteNombre: user?.nombre || '',
         representanteDocumento: user?.documento || '',
         observaciones: observaciones || '',
+        estado: 'pendiente', // Siempre guardar la cotización como pendiente
         productos: productos.map((item) => ({
           item: String(item.item ?? item.codigo ?? ''),
           descripcion: item.descripcion || '',
@@ -136,6 +170,8 @@ const Cotizacion = ({
           grupo: item.grupo || '',
           linea: item.linea || '',
         })),
+        // Al guardar, la fecha de creación siempre es la actual del servidor (o la del cliente si la envías)
+        fechaCreacion: new Date().toISOString(), 
       };
 
       await axios.post('http://localhost:3000/cotizaciones', payload);
@@ -144,7 +180,7 @@ const Cotizacion = ({
       if (facturaRef.current) {
         const opt = {
           margin: 0.2,
-          filename: `Cotizacion_${String(proximoNumero).padStart(4, '0')}.pdf`,
+          filename: `Cotizacion_${currentCotizacionNumber}.pdf`, // Usar el número determinado
           image: { type: 'jpeg', quality: 0.98 },
           html2canvas: { scale: 2, useCORS: true },
           jsPDF: { unit: 'mm', format: 'a4', orientation: 'portrait' },
@@ -209,7 +245,7 @@ const Cotizacion = ({
               <div style={{ textAlign: 'center' }}>Actividad Económica 4773</div>
               <div style={{ textAlign: 'center' }}>Bodega Ventas Punto</div>
               <div style={{ textAlign: 'center' }}>
-                notificaciones@smgroupsas.com.co | 310 5164909
+                ventasbucanero@smgroupsas.com.co | (602) 721 8772
               </div>
               <div style={{ textAlign: 'center' }}>Calle 17 No 19-46, SAN MIGUEL</div>
             </div>
@@ -224,10 +260,13 @@ const Cotizacion = ({
               marginTop: 8,
             }}
           >
-            <div style={{ fontWeight: 'bold' }}>{`COTIZACIÓN N° ${String(
-              proximoNumero
-            ).padStart(4, '0')}`}</div>
-            <div>Fecha: {fechaFactura.toLocaleDateString('es-CO')}</div>
+            <div style={{ fontWeight: 'bold' }}>
+              COTIZACIÓN N°{' '}
+              {numeroCotizacion
+                ? String(numeroCotizacion).padStart(4, '0')
+                : String(proximoNumero).padStart(4, '0')}
+            </div>
+            <div>Fecha: {fechaVisual.toLocaleDateString('es-CO')}</div>
           </div>
         </div>
 
@@ -362,13 +401,12 @@ const Cotizacion = ({
         </div>
       </div>
 
-      {/* Botón guardar y descargar */}
       <div className="no-print" style={{ marginTop: 32, display: 'flex', justifyContent: 'center', gap: 24 }}>
         <button
           onClick={handleGuardarYDescargar}
           disabled={guardando}
           style={{
-            background: '#178c3c',
+            background: soloImprimir ? '#0c5231' : '#178c3c',
             color: '#fff',
             padding: '12px 24px',
             border: 'none',
@@ -377,7 +415,7 @@ const Cotizacion = ({
             cursor: guardando ? 'not-allowed' : 'pointer',
           }}
         >
-          {guardando ? 'Guardando...' : 'Guardar y Descargar PDF'}
+          {soloImprimir ? 'Imprimir PDF' : guardando ? 'Guardando...' : 'Guardar y Descargar PDF'}
         </button>
       </div>
 
@@ -395,6 +433,12 @@ Cotizacion.propTypes = {
   productos: PropTypes.array.isRequired,
   observaciones: PropTypes.string,
   onCotizacionGuardada: PropTypes.func,
+  soloImprimir: PropTypes.bool,
+  numeroCotizacion: PropTypes.oneOfType([PropTypes.string, PropTypes.number]),
+  fechaDocumento: PropTypes.oneOfType([
+    PropTypes.string,
+    PropTypes.instanceOf(Date),
+  ]),
 };
 
 export default Cotizacion;

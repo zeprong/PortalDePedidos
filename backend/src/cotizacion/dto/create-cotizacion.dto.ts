@@ -62,4 +62,10 @@ export class CreateCotizacionDto {
   @ValidateNested({ each: true })
   @Type(() => ProductoDto)
   productos: ProductoDto[];
+
+  @IsString()
+  estado: string;
+
+  @IsOptional()
+  fechaEntrega?: Date;
 }

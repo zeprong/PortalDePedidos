@@ -1,9 +1,9 @@
 import React, { useState, useEffect, useRef } from 'react';
 import PropTypes from 'prop-types';
-import * as XLSX from 'xlsx'; // Para exportar a Excel
-import { saveAs } from 'file-saver'; // Para guardar archivos (excel)
+import * as XLSX from 'xlsx';
+import { saveAs } from 'file-saver';
 
-import Cotizacion from './Cotizacion'; // Importamos el componente de Cotización
+import Cotizacion from './Cotizacion'; // Ajusta ruta
 
 const Cart = ({ open, onClose, cart, onRemove, onClear, onClienteChange, onCotizacionGuardada }) => {
   const [localCart, setLocalCart] = useState([]);
@@ -11,11 +11,10 @@ const Cart = ({ open, onClose, cart, onRemove, onClear, onClienteChange, onCotiz
   const [clienteSeleccionado, setClienteSeleccionado] = useState(null);
   const [inputCliente, setInputCliente] = useState('');
   const [showSuggestions, setShowSuggestions] = useState(false);
-  const [mostrarCotizacion, setMostrarCotizacion] = useState(false); // Estado para mostrar/ocultar el modal de Cotizacion
+  const [mostrarCotizacion, setMostrarCotizacion] = useState(false);
 
-  const suggestionsRef = useRef(null); // Ref para cerrar sugerencias al hacer clic fuera
+  const suggestionsRef = useRef(null);
 
-  // Carga inicial de clientes al montar el componente
   useEffect(() => {
     fetch('http://localhost:3000/clientes')
       .then(res => res.json())
@@ -33,7 +32,6 @@ const Cart = ({ open, onClose, cart, onRemove, onClear, onClienteChange, onCotiz
         }
       })
       .catch(err => console.error('Error cargando clientes:', err));
-    // eslint-disable-next-line
   }, []);
 
   useEffect(() => {
@@ -42,7 +40,6 @@ const Cart = ({ open, onClose, cart, onRemove, onClear, onClienteChange, onCotiz
       setInputCliente(clientes[0].nombreApellidos || clientes[0].nombre || '');
       if (onClienteChange) onClienteChange(clientes[0]);
     }
-    // eslint-disable-next-line
   }, [clientes]);
 
   useEffect(() => {
@@ -184,7 +181,7 @@ const Cart = ({ open, onClose, cart, onRemove, onClear, onClienteChange, onCotiz
     setMostrarCotizacion(false);
   };
 
-  const handleCotizacionGuardada = () => {
+  const handleCotizacionGuardadaInterna = () => {
     onClear();
     setMostrarCotizacion(false);
     setClienteSeleccionado(null);
@@ -199,12 +196,8 @@ const Cart = ({ open, onClose, cart, onRemove, onClear, onClienteChange, onCotiz
     (c.nombreApellidos || c.nombre || '').toLowerCase().includes(inputCliente.toLowerCase())
   ).slice(0, 5);
 
-  // Estilos responsivos adicionales para mobile
-  // Usamos clases tailwind y algunos estilos inline para asegurar responsividad
-  // y mejor experiencia en vertical/horizontal
   return (
     <>
-      {/* Overlay y modal del carrito */}
       <div className="fixed inset-0 bg-black bg-opacity-40 z-50 flex items-center justify-center p-2 sm:p-4">
         <div
           className="
@@ -212,30 +205,16 @@ const Cart = ({ open, onClose, cart, onRemove, onClear, onClienteChange, onCotiz
             max-w-[800px] max-h-[90vh]
             shadow-2xl relative border border-gray-300
             text-xs text-gray-800 font-sans flex flex-col
-            sm:max-w-[800px]
-            md:max-w-[800px]
-            lg:max-w-[800px]
-            min-h-[60vh]
-            sm:min-h-[60vh]
-            md:min-h-[60vh]
-            lg:min-h-[60vh]
             overflow-hidden
           "
-          style={{
-            width: '100%',
-            maxWidth: '100vw',
-            minHeight: '60vh',
-            maxHeight: '95vh',
-            // Para pantallas pequeñas, que ocupe casi todo el alto
-          }}
+          style={{ maxWidth: '100vw', minHeight: '60vh', maxHeight: '95vh' }}
         >
-          {/* Header del carrito */}
           <div className="flex justify-between items-center px-2 sm:px-4 py-2 bg-white border-b border-gray-200 text-sm sticky top-0 z-10 rounded-t-xl">
             <span className="text-green-900 font-medium text-base sm:text-lg">Carrito de productos</span>
             <button onClick={onClose} className="text-gray-500 text-lg font-semibold hover:text-gray-700 px-2">×</button>
           </div>
 
-          {/* Selector de cliente con autocomplete */}
+          {/* Selector cliente autocomplete */}
           <div className="p-2 sm:p-4 border-b border-gray-200 relative" ref={suggestionsRef}>
             <label htmlFor="cliente-input" className="block mb-1 font-semibold text-gray-700 text-xs sm:text-sm">Seleccionar Cliente:</label>
             <input
@@ -269,15 +248,11 @@ const Cart = ({ open, onClose, cart, onRemove, onClear, onClienteChange, onCotiz
             )}
           </div>
 
-          {/* Contenido del carrito (productos) */}
+          {/* Contenido carrito */}
           <div
             id="cart-content"
             className="overflow-y-auto flex-1 p-2 sm:p-4 space-y-3"
-            style={{
-              minHeight: '30vh',
-              maxHeight: '40vh',
-              // En mobile, que no crezca demasiado
-            }}
+            style={{ minHeight: '30vh', maxHeight: '40vh' }}
           >
             {localCart.length === 0 ? (
               <p className="text-gray-400 text-center py-10 text-sm sm:text-base">Sin productos.</p>
@@ -329,7 +304,6 @@ const Cart = ({ open, onClose, cart, onRemove, onClear, onClienteChange, onCotiz
             )}
           </div>
 
-          {/* Footer del carrito */}
           {localCart.length > 0 && (
             <div className="bg-white p-2 sm:p-3 border-t border-gray-200 sticky bottom-0 z-10 rounded-b-xl flex flex-col sm:flex-row justify-between items-center text-sm gap-2">
               <button onClick={onClear} className="text-red-600 hover:underline mb-2 sm:mb-0">Vaciar</button>
@@ -357,21 +331,12 @@ const Cart = ({ open, onClose, cart, onRemove, onClear, onClienteChange, onCotiz
         </div>
       </div>
 
-      {/* Modal para la Cotización (vista previa y descarga) */}
+      {/* Modal vista previa cotización */}
       {mostrarCotizacion && (
         <div className="fixed inset-0 bg-black bg-opacity-40 z-60 flex items-center justify-center p-2 sm:p-4">
           <div
-            className="
-              bg-white rounded-xl w-full
-              max-w-4xl max-h-[95vh]
-              shadow-2xl relative border border-gray-300 p-2 sm:p-4 overflow-auto
-            "
-            style={{
-              width: '100%',
-              maxWidth: '100vw',
-              minHeight: '60vh',
-              maxHeight: '95vh',
-            }}
+            className="bg-white rounded-xl w-full max-w-4xl max-h-[95vh] shadow-2xl relative border border-gray-300 p-2 sm:p-4 overflow-auto"
+            style={{ maxWidth: '100vw', minHeight: '60vh', maxHeight: '95vh' }}
           >
             <button
               onClick={handleCerrarCotizacion}
@@ -380,7 +345,6 @@ const Cart = ({ open, onClose, cart, onRemove, onClear, onClienteChange, onCotiz
             >
               ×
             </button>
-            {/* Componente Cotizacion, con mapeo explícito de propiedades del cliente */}
             <Cotizacion
               cliente={{
                 nombreApellidos: clienteSeleccionado?.nombreApellidos || '',
@@ -389,10 +353,10 @@ const Cart = ({ open, onClose, cart, onRemove, onClear, onClienteChange, onCotiz
                 cliente: clienteSeleccionado?.cliente || clienteSeleccionado?.nit || '',
                 direccion: clienteSeleccionado?.direccion || '',
                 telefono: clienteSeleccionado?.telefono || '',
-                ciudad: clienteSeleccionado?.ciudad || ''
+                ciudad: clienteSeleccionado?.ciudad || '',
               }}
               productos={localCart.map(item => ({
-                codigo: item.codigo,
+                item: item.codigo,
                 descripcion: item.descripcion,
                 cantidad: item.cantidad,
                 precio: item.precio_editado,
@@ -401,26 +365,12 @@ const Cart = ({ open, onClose, cart, onRemove, onClear, onClienteChange, onCotiz
                 iva: item.iva || 0,
               }))}
               observaciones={`Cliente: ${clienteSeleccionado ? (clienteSeleccionado.nombreApellidos || clienteSeleccionado.nombre || clienteSeleccionado.razonSocial) : ''}`}
-              onCotizacionGuardada={handleCotizacionGuardada}
+              soloImprimir={false} // Modo creación: guarda y descarga
+              onCotizacionGuardada={handleCotizacionGuardadaInterna}
             />
           </div>
         </div>
       )}
-      {/* Estilos responsivos extra para mobile */}
-      <style>{`
-        @media (max-width: 640px) {
-          #cart-content {
-            min-height: 30vh !important;
-            max-height: 40vh !important;
-          }
-          .max-w-4xl, .max-w-[800px] {
-            max-width: 100vw !important;
-          }
-          .rounded-xl {
-            border-radius: 0.75rem !important;
-          }
-        }
-      `}</style>
     </>
   );
 };

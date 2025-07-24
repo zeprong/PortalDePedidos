@@ -27,7 +27,7 @@ const Sidebar = ({ onViewSelect }) => {
     { label: 'Proveedores', icon: Briefcase, view: 'proveedores', roles: ['comprador'] },
     { label: 'Inventario', icon: Warehouse, view: 'inventario', roles: ['almacen'] },
     { label: 'Recepción', icon: Upload, view: 'recepcion', roles: ['almacen'] },
-    { label: 'Remisiones', icon: NotebookPenIcon, view: 'remisiones', roles: ['vendedor'] },
+    { label: 'Cotizaciones', icon: NotebookPenIcon, view: 'cotizacion', roles: ['vendedor'] },
     { label: 'Programador Visitas', icon: CalendarRange, view: 'programadorVisitas', roles: ['vendedor'] },
    
     { label: 'Historial de Ventas', icon: TrendingUpDown, view: 'historialVentas', roles: ['vendedor'] },

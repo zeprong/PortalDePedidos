@@ -11,6 +11,9 @@ import Clientes from '../pages/vendedor/Clientes';
 import { usePreventNavigation } from '../config/usePreventNavigation';
 import { AuthContext } from '../config/AuthContext';
 
+import SellerStats from '../Component/SellerStats';
+import ListaCotizaciones from '../Component/ListaCotizaciones';
+
 const AdminDashboard = () => {
   usePreventNavigation();
   const { user } = useContext(AuthContext);
@@ -27,6 +30,10 @@ const AdminDashboard = () => {
     );
   }
 
+  // La vista 'cotizacion' sí llama correctamente al componente ListaCotizaciones.
+  // Si no se muestra, asegúrate de que Sidebar envía 'cotizacion' como valor de vista al seleccionar la opción correspondiente.
+  // También revisa que el usuario tenga el rol adecuado para ver esa opción en el menú.
+
   const renderVista = () => {
     switch (vista) {
       case 'actualizacion':
@@ -41,19 +48,14 @@ const AdminDashboard = () => {
         return <VentasUpload />;
       case 'clientes':
         return <Clientes />;
-        case 'portafolio':
-          return <PortafolioConsumoExistencias />;   
+      case 'portafolio':
+        return <PortafolioConsumoExistencias />;
+      case 'cotizacion':
+        // Aquí se llama correctamente el componente de cotizaciones
+        return <ListaCotizaciones />;
       case 'inicio':
       default:
-        return (
-          <div className="flex flex-col items-center justify-center h-full text-center text-gray-700">
-            <h1 className="text-2xl font-bold mb-2">Bienvenido al Panel de Administración</h1>
-            <p className="text-sm text-gray-500 max-w-md">
-              Desde aquí puedes gestionar productos, usuarios, portafolios, scripts SQL y más.
-              Usa el menú lateral para navegar entre las diferentes secciones.
-            </p>
-          </div>
-        );
+        return <SellerStats />;
     }
   };
 

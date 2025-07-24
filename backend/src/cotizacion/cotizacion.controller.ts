@@ -1,15 +1,25 @@
-// src/cotizacion/cotizacion.controller.ts
-import { Controller, Get, Post, Body, Param, Delete, ParseIntPipe } from '@nestjs/common';
+import {
+  Controller,
+  Get,
+  Put,
+  Post,
+  Body,
+  Param,
+  Delete,
+  ParseIntPipe,
+} from '@nestjs/common';
 import { CotizacionService } from './cotizacion.service';
 import { CreateCotizacionDto } from './dto/create-cotizacion.dto';
 import { Cotizacion } from './entities/cotizacion.entity';
 
-@Controller('cotizaciones')  // Ajustado a plural para REST convencional
+@Controller('cotizaciones') // Ruta plural siguiendo convención REST
 export class CotizacionController {
-  constructor(private readonly cotizacionService: CotizacionService) {}
+  constructor(private readonly cotizacionService: CotizacionService) { }
 
   @Post()
-  create(@Body() createCotizacionDto: CreateCotizacionDto): Promise<Cotizacion> {
+  create(
+    @Body() createCotizacionDto: CreateCotizacionDto,
+  ): Promise<Cotizacion> {
     return this.cotizacionService.create(createCotizacionDto);
   }
 
@@ -17,12 +27,17 @@ export class CotizacionController {
   findAll(): Promise<Cotizacion[]> {
     return this.cotizacionService.findAll();
   }
-    // Devuelve el próximo número de cotización (último id + 1)
-@Get('proximo')
-async getProximoNumero(): Promise<{ proximo: number }> {
-  const proximo = await this.cotizacionService.getProximoNumero();
-  return { proximo };
-}
+
+  @Get('proximo')
+  async getProximoNumero(): Promise<{ proximo: number }> {
+    const proximo = await this.cotizacionService.getProximoNumero();
+    return { proximo };
+  }
+
+  @Get('resumen')
+  getResumenCotizaciones() {
+    return this.cotizacionService.getResumenCotizaciones();
+  }
 
   @Get(':id')
   findOne(@Param('id', ParseIntPipe) id: number): Promise<Cotizacion> {
@@ -33,6 +48,13 @@ async getProximoNumero(): Promise<{ proximo: number }> {
   remove(@Param('id', ParseIntPipe) id: number): Promise<void> {
     return this.cotizacionService.remove(id);
   }
-
+  @Put(':id')
+  update(
+    @Param('id', ParseIntPipe) id: number,
+    @Body() updateCotizacionDto: Partial<CreateCotizacionDto>,
+  ): Promise<Cotizacion> {
+    return this.cotizacionService.update(id, updateCotizacionDto);
+  }
+  
 
 }

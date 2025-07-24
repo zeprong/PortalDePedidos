@@ -36,4 +36,13 @@ export class Cotizacion {
 
   @CreateDateColumn({ type: 'datetime' })
   fechaCreacion: Date;
+  
+  @Column({ length: 255 })
+  estado: string;
+
+  @CreateDateColumn({ type: 'datetime' })
+  fechaEntrega: Date;
+
+  
+
 }

@@ -94,7 +94,7 @@ const PortafolioConsumoExistencias = () => {
   const [cart, setCart] = useState([]);
   const [popupOpen, setPopupOpen] = useState(false);
 
-  // Estados para modal selección lote
+  // Modal selection lote
   const [modalLoteOpen, setModalLoteOpen] = useState(false);
   const [productoSeleccionado, setProductoSeleccionado] = useState(null);
   const [lotesProducto, setLotesProducto] = useState([]);
@@ -134,7 +134,6 @@ const PortafolioConsumoExistencias = () => {
     return Array.from(setLineas).sort();
   }, [existencias]);
 
-  // Agrupar existencias por item, con lotes
   const existenciasPorItem = useMemo(() => {
     const map = {};
     existencias.forEach((ex) => {
@@ -220,26 +219,16 @@ const PortafolioConsumoExistencias = () => {
     setTimeout(() => setMessage(null), 2000);
   };
 
-  // Función para manejar cuando se guarda la cotización y se quiere reiniciar
   const handleCotizacionGuardada = () => {
-    setCart([]);        // Vacía carrito
-    setPopupOpen(false); // Cierra modal carrito
-    // Si quieres, aquí puedes resetear filtros o búsqueda
+    setCart([]);
+    setPopupOpen(false);
   };
 
-  // Justo antes del return del componente PortafolioConsumoExistencias
   let maxCantidad = 1;
   if (loteSeleccionado) {
-    if (mostrarOrden) {
-      maxCantidad = loteSeleccionado.cantDisponibleOrd;
-    } else {
-      maxCantidad = loteSeleccionado.existencia;
-    }
+    maxCantidad = mostrarOrden ? loteSeleccionado.cantDisponibleOrd : loteSeleccionado.existencia;
   }
 
-  // --- VISTA VERTICAL PARA MOVIL ---
-  // Si la pantalla es menor a 640px (sm), mostramos la vista vertical tipo "cards"
-  // Si no, mostramos la tabla tradicional
   const [isMobile, setIsMobile] = useState(window.innerWidth < 640);
 
   useEffect(() => {
@@ -250,8 +239,7 @@ const PortafolioConsumoExistencias = () => {
 
   return (
     <div className="max-w-6xl mx-auto p-2 sm:p-4 md:p-6 bg-white rounded shadow relative">
-
-      {/* Filtros fuera del contenedor scroll para evitar recorte */}
+      {/* Filtros */}
       <div className="flex flex-col sm:flex-row flex-wrap gap-2 sm:gap-4 mb-4 sm:mb-6 z-50 relative items-stretch sm:items-center">
         <input
           type="text"
@@ -260,22 +248,18 @@ const PortafolioConsumoExistencias = () => {
           onChange={(e) => setSearchText(e.target.value)}
           className="w-full sm:w-auto border border-gray-300 rounded px-3 py-2 flex-grow min-w-[150px] sm:min-w-[200px]"
         />
-
         <MultiSelectDropdown
           label={`Grupos (${selectedGrupos.length})`}
           options={grupos}
           selectedValues={selectedGrupos}
           onChange={setSelectedGrupos}
         />
-
         <MultiSelectDropdown
           label={`Lineas (${selectedLineas.length})`}
           options={lineas}
           selectedValues={selectedLineas}
           onChange={setSelectedLineas}
         />
-
-        {/* Checkbox para mostrar orden */}
         <label className="flex items-center space-x-2 whitespace-nowrap mt-2 sm:mt-0">
           <input
             type="checkbox"
@@ -288,18 +272,14 @@ const PortafolioConsumoExistencias = () => {
       </div>
 
       {message && (
-        <div className="mb-4 text-center text-sm text-red-600">
-          {message}
-        </div>
+        <div className="mb-4 text-center text-sm text-red-600">{message}</div>
       )}
 
-      {/* Vista vertical para móvil */}
+      {/* Vista móvil o escritorio */}
       {isMobile ? (
         <div className="flex flex-col gap-3">
           {itemsFiltrados.length === 0 && (
-            <div className="text-center py-4 text-gray-500">
-              No se encontraron registros.
-            </div>
+            <div className="text-center py-4 text-gray-500">No se encontraron registros.</div>
           )}
           {itemsFiltrados.map((item, index) => (
             <div
@@ -330,12 +310,9 @@ const PortafolioConsumoExistencias = () => {
                   <b>{mostrarOrden ? item.cantDisponibleOrdTotal.toLocaleString() : item.existenciaTotal.toLocaleString()}</b>
                 </span>
                 <span>
-                  {mostrarOrden ? 'Precio Orden:' : 'Precio Unit.:'}{' '}
+                  {mostrarOrden ? 'Precio Orden:' : 'Precio Unit.'}{' '}
                   <b>
-                    {(mostrarOrden
-                      ? item.precioOrdenPromedio
-                      : item.precioUnitarioPromedio
-                    ).toLocaleString('es-CO', {
+                    {(mostrarOrden ? item.precioOrdenPromedio : item.precioUnitarioPromedio).toLocaleString('es-CO', {
                       style: 'currency',
                       currency: 'COP',
                       minimumFractionDigits: 2,
@@ -347,7 +324,6 @@ const PortafolioConsumoExistencias = () => {
           ))}
         </div>
       ) : (
-        // Tabla tradicional para escritorio/tablet
         <div className="relative overflow-x-auto max-h-[400px] sm:max-h-[500px] md:max-h-[600px] rounded border border-gray-200">
           <table className="min-w-full text-xs sm:text-sm bg-white">
             <thead className="sticky top-0 z-20 bg-green-800 text-white shadow">
@@ -375,15 +351,10 @@ const PortafolioConsumoExistencias = () => {
                   <td className="px-1 sm:px-2 md:px-3 py-2 border-b">{item.unidadMedida}</td>
                   <td className="px-1 sm:px-2 md:px-3 py-2 border-b text-right hidden xs:table-cell">{item.factorUMOrden ?? '-'}</td>
                   <td className="px-1 sm:px-2 md:px-3 py-2 border-b text-right">
-                    {mostrarOrden
-                      ? item.cantDisponibleOrdTotal.toLocaleString()
-                      : item.existenciaTotal.toLocaleString()}
+                    {mostrarOrden ? item.cantDisponibleOrdTotal.toLocaleString() : item.existenciaTotal.toLocaleString()}
                   </td>
                   <td className="px-1 sm:px-2 md:px-3 py-2 border-b text-right">
-                    {(mostrarOrden
-                      ? item.precioOrdenPromedio
-                      : item.precioUnitarioPromedio
-                    ).toLocaleString('es-CO', {
+                    {(mostrarOrden ? item.precioOrdenPromedio : item.precioUnitarioPromedio).toLocaleString('es-CO', {
                       style: 'currency',
                       currency: 'COP',
                       minimumFractionDigits: 2,
@@ -412,7 +383,7 @@ const PortafolioConsumoExistencias = () => {
         </div>
       )}
 
-      {/* Modal para seleccionar lote */}
+      {/* Modal selección lote */}
       {modalLoteOpen && (
         <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50 p-2 sm:p-4">
           <div className="bg-white rounded-lg shadow-lg w-full max-w-xs sm:max-w-md p-4 sm:p-6 relative animate-fadeIn">
@@ -420,7 +391,6 @@ const PortafolioConsumoExistencias = () => {
               Selecciona un lote para <span className="text-green-700">{productoSeleccionado.notasItem}</span>
             </h3>
 
-            {/* Selector de lote */}
             <div className="mb-4">
               <label htmlFor="select-lote" className="block text-gray-700 font-medium mb-2">
                 Lote
@@ -444,7 +414,6 @@ const PortafolioConsumoExistencias = () => {
               </select>
             </div>
 
-            {/* Input cantidad */}
             <div className="mb-6">
               <label htmlFor="input-cantidad" className="block text-gray-700 font-medium mb-2">
                 Cantidad
@@ -467,7 +436,6 @@ const PortafolioConsumoExistencias = () => {
               )}
             </div>
 
-            {/* Botones */}
             <div className="flex flex-col sm:flex-row justify-end sm:space-x-3 space-y-2 sm:space-y-0">
               <button
                 onClick={() => setModalLoteOpen(false)}
@@ -496,7 +464,6 @@ const PortafolioConsumoExistencias = () => {
               </button>
             </div>
 
-            {/* Botón cerrar en la esquina */}
             <button
               onClick={() => setModalLoteOpen(false)}
               className="absolute top-2 right-2 sm:top-3 sm:right-3 text-gray-500 hover:text-gray-700 focus:outline-none"
@@ -511,7 +478,6 @@ const PortafolioConsumoExistencias = () => {
         </div>
       )}
 
-      {/* Botón para abrir carrito */}
       <button
         onClick={() => setPopupOpen(true)}
         className="fixed bottom-2 right-2 sm:bottom-4 sm:right-4 md:bottom-6 md:right-6 bg-green-600 hover:bg-green-700 text-white rounded-full shadow-lg w-12 h-12 sm:w-14 sm:h-14 flex items-center justify-center text-2xl z-50"
@@ -531,10 +497,8 @@ const PortafolioConsumoExistencias = () => {
         cart={cart}
         onRemove={(idUnico) => setCart(cart.filter(i => i.idUnico !== idUnico))}
         onClear={() => setCart([])}
-        onClienteChange={(cliente) => {
-          // Puedes manejar aquí si quieres
-        }}
-        onCotizacionGuardada={handleCotizacionGuardada} // <-- Pasamos la función para reiniciar
+        onClienteChange={() => {}}
+        onCotizacionGuardada={handleCotizacionGuardada}
       />
     </div>
   );
